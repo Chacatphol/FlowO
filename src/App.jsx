@@ -17,6 +17,7 @@ import './day-picker.css';
 const initialState = {
   subjects: [], // {id, name, color}
   tasks: [], // {id, subjectId, title, detail, startAt|null, dueAt|null, taskType:'deadline'|'event', link, status:'todo'|'doing'|'done', category:'เรียน'|'งาน'|'ส่วนตัว', reminders:[{type:'minutes'|'hours'|'days', amount:number}], createdAt, updatedAt}
+  courses: [], // {id, name, code, room, pRoom, teacher, dayOfWeek:1-5, startTime, endTime, scheduleType:'odd-onsite'|'even-onsite'|'online-always'|'onsite-always', color, createdAt, updatedAt}
   lastLogin: null,
   loginStreak: 0,
 }
@@ -33,6 +34,7 @@ function reducer(state, action){
         ...initialState,
         subjects: Array.isArray(loaded.subjects) ? loaded.subjects.filter(s => s && typeof s === 'object') : [],
         tasks: Array.isArray(loaded.tasks) ? loaded.tasks.filter(t => t && typeof t === 'object') : [],
+        courses: Array.isArray(loaded.courses) ? loaded.courses.filter(c => c && typeof c === 'object') : [],
         lastLogin: loaded.lastLogin || null,
         loginStreak: loaded.loginStreak || 0,
       };
@@ -43,6 +45,9 @@ function reducer(state, action){
     case 'addTask': return { ...state, tasks:[...state.tasks, action.payload] }
     case 'updateTask': return { ...state, tasks: state.tasks.map(t=>t.id===action.payload.id? {...t,...action.payload, updatedAt:Date.now()}:t) }
     case 'deleteTask': return { ...state, tasks: state.tasks.filter(t=>t.id!==action.id) }
+    case 'addCourse': return { ...state, courses:[...state.courses, action.payload] }
+    case 'updateCourse': return { ...state, courses: state.courses.map(c=>c.id===action.payload.id? {...c,...action.payload, updatedAt:Date.now()}:c) }
+    case 'deleteCourse': return { ...state, courses: state.courses.filter(c=>c.id!==action.id) }
     case 'updateLoginStreak': return { ...state, lastLogin: action.payload.lastLogin, loginStreak: action.payload.loginStreak }
     case 'reset': return initialState
     default: return state
@@ -59,6 +64,37 @@ const hexToRgba = (hex, alpha = 1) => {
   }
   c = '0x' + c.join('');
   return `rgba(${(c >> 16) & 255}, ${(c >> 8) & 255}, ${c & 255}, ${alpha})`;
+};
+
+// Calculate odd/even week (สัปดาห์คู่/คี่)
+// Week starting Dec 1, 2025 is week 1 (odd)
+const getWeekType = (date) => {
+  const startDate = new Date('2025-12-01');
+  const weeksDiff = Math.floor(differenceInDays(date, startDate) / 7);
+  return weeksDiff % 2 === 0 ? 'odd' : 'even';
+};
+
+// Get course status (online/onsite) based on schedule type and current week
+const getCourseStatus = (course, date) => {
+  const weekType = getWeekType(date);
+  
+  if (course.scheduleType === 'online-always') return 'online';
+  if (course.scheduleType === 'onsite-always') return 'onsite';
+  if (course.scheduleType === 'odd-onsite') {
+    return weekType === 'odd' ? 'onsite' : 'online';
+  }
+  if (course.scheduleType === 'even-onsite') {
+    return weekType === 'even' ? 'onsite' : 'online';
+  }
+  return 'unknown';
+};
+
+// Get courses for a specific day
+const getCoursesForDay = (courses, date) => {
+  const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+  return courses
+    .filter(c => c.dayOfWeek === dayOfWeek)
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
 };
 
 // --- Data layer (Firebase) with Auth ---
@@ -251,6 +287,7 @@ export default function App(){
   const navItems = [
     { key: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
     { key: 'tasks', label: 'Tasks', icon: ListTodo },
+    { key: 'schedule', label: 'ตารางเรียน', icon: CalendarIcon },
     { key: 'settings', label: 'ตั้งค่า', icon: Layers },
   ];
 
@@ -312,6 +349,7 @@ export default function App(){
             <motion.div key={view} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.12 }}>
               {view === 'dashboard' && <Dashboard state={state} tasks={tasks} dueSoon={dueSoon} progressToday={progressToday} lazyScore={lazyScore} setView={setView} setSelectedSubject={setSelectedSubject} />}
               {view === 'tasks' && <TasksView state={state} dispatch={dispatch} tasks={tasks} filteredTasks={filteredTasks} setQuery={setQuery} query={query} selectedSubject={selectedSubject} setSelectedSubject={setSelectedSubject} deleteMode={deleteMode} selectedTasksForDeletion={selectedTasksForDeletion} setSelectedTasksForDeletion={setSelectedTasksForDeletion} />}
+              {view === 'schedule' && <ScheduleView state={state} dispatch={dispatch} />}
               {view === 'settings' && <Settings state={state} dispatch={dispatch} userId={user?.uid} onLogout={handleLogout} setView={setView} />}
               {view === 'history' && <HistoryView tasks={archivedTasks} dispatch={dispatch} />}
             </motion.div>
@@ -681,6 +719,272 @@ function Dashboard({state, tasks, dueSoon, progressToday, lazyScore, setView, se
                 </div>
               );
             })()}
+          </Modal>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function ScheduleView({state, dispatch}) {
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedCourse, setSelectedCourse] = useState(null);
+
+  const weekType = getWeekType(selectedDate);
+  const weekTypeLabel = weekType === 'odd' ? 'สัปดาห์คี่' : 'สัปดาห์คู่';
+  const weekTypeColor = weekType === 'odd' 
+    ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/50' 
+    : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/50';
+
+  const todayCourses = useMemo(() => {
+    return getCoursesForDay(state.courses, selectedDate);
+  }, [state.courses, selectedDate]);
+
+  const weekDays = useMemo(() => {
+    const days = [];
+    for (let i = 1; i <= 5; i++) { // Monday to Friday
+      const date = new Date(selectedDate);
+      const currentDay = date.getDay();
+      const diff = i - (currentDay === 0 ? 7 : currentDay);
+      date.setDate(date.getDate() + diff);
+      days.push(date);
+    }
+    return days;
+  }, [selectedDate]);
+
+  const weekSchedule = useMemo(() => {
+    const schedule = {};
+    weekDays.forEach(day => {
+      const dayKey = format(day, 'yyyy-MM-dd');
+      schedule[dayKey] = getCoursesForDay(state.courses, day);
+    });
+    return schedule;
+  }, [state.courses, weekDays]);
+
+  // Helper to calculate rowspan for merged cells
+  const getTimeSlotRowspan = (course) => {
+    const [startHour, startMin] = course.startTime.split(':').map(Number);
+    const [endHour, endMin] = course.endTime.split(':').map(Number);
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    return Math.ceil((endMinutes - startMinutes) / 60);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <Card>
+        <div className="flex items-center justify-between mb-4">
+          <SectionTitle><CalendarIcon className="h-5 w-5"/> ตารางเรียน</SectionTitle>
+        </div>
+
+        {/* Date Navigator */}
+        <div className="flex items-center justify-between">
+          <GhostButton onClick={() => setSelectedDate(addDays(selectedDate, -1))}>
+            <ChevronLeft className="h-4 w-4"/>
+          </GhostButton>
+          <div className="text-center flex-1">
+            <div className="font-semibold text-lg mb-2">
+              {format(selectedDate, 'EEEE d MMMM yyyy', {locale: th})}
+            </div>
+            <div className={`inline-block px-6 py-2 rounded-full font-bold text-lg ${weekTypeColor} animate-pulse`}>
+              ✨ {weekTypeLabel} ✨
+            </div>
+          </div>
+          <GhostButton onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
+            <ChevronRight className="h-4 w-4"/>
+          </GhostButton>
+        </div>
+      </Card>
+
+      {/* Daily View */}
+      <Card>
+        <SectionTitle>ตารางเรียนวันนี้</SectionTitle>
+        {todayCourses.length > 0 ? (
+          <div className="space-y-3 mt-4">
+            {todayCourses.map(course => {
+              const status = getCourseStatus(course, selectedDate);
+              const statusBgColor = status === 'online' 
+                ? 'bg-blue-500'
+                : status === 'onsite'
+                ? 'bg-green-500'
+                : 'bg-slate-500';
+              const statusLabel = status === 'online' ? '🌐 ออนไลน์' : status === 'onsite' ? '🏫 ออนไซต์' : '❓ ไม่ทราบ';
+
+              return (
+                <div 
+                  key={course.id}
+                  onClick={() => setSelectedCourse(course)}
+                  className="rounded-xl bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 cursor-pointer transition-all overflow-hidden border-l-4"
+                  style={{ borderLeftColor: course.color }}
+                >
+                  {/* Status Bar */}
+                  <div className={`${statusBgColor} text-white px-4 py-2 font-bold text-sm flex items-center justify-between`}>
+                    <span>{statusLabel}</span>
+                    <span className="text-xs opacity-90">
+                      <Clock className="h-3 w-3 inline mr-1"/>
+                      {course.startTime} - {course.endTime}
+                    </span>
+                  </div>
+                  
+                  {/* Course Info */}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="font-semibold text-lg mb-2">{course.name}</div>
+                        <div className="text-sm text-slate-600 dark:text-slate-300 space-y-1">
+                          <div>📚 รหัสวิชา: {course.code}</div>
+                          {course.room && <div>🚪 ห้องเรียน: {course.room}</div>}
+                          {course.pRoom && <div>📍 ห้อง P: {course.pRoom}</div>}
+                          {course.teacher && <div>👨‍🏫 อาจารย์: {course.teacher}</div>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center text-slate-500 py-10">
+            ไม่มีวิชาเรียนในวันนี้ 🎉
+          </div>
+        )}
+      </Card>
+
+      {/* Weekly Overview */}
+      <Card>
+        <SectionTitle>ตารางเรียนรายสัปดาห์ (ภาพรวม)</SectionTitle>
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr>
+                <th className="border border-slate-200 dark:border-slate-700 p-2 bg-slate-50 dark:bg-slate-800 text-sm font-semibold sticky left-0 z-10">เวลา</th>
+                {weekDays.map(day => (
+                  <th key={format(day, 'yyyy-MM-dd')} className="border border-slate-200 dark:border-slate-700 p-2 bg-slate-50 dark:bg-slate-800 text-sm font-semibold min-w-[140px]">
+                    {format(day, 'EEEE', {locale: th})}
+                    <div className="text-xs font-normal text-slate-500">{format(day, 'd MMM', {locale: th})}</div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map((time, timeIndex) => {
+                const renderedCells = new Set();
+                
+                return (
+                  <tr key={time}>
+                    <td className="border border-slate-200 dark:border-slate-700 p-2 text-xs text-slate-500 font-medium bg-slate-50 dark:bg-slate-800 sticky left-0 z-10">{time}</td>
+                    {weekDays.map((day, dayIndex) => {
+                      const dayKey = format(day, 'yyyy-MM-dd');
+                      const cellKey = `${dayKey}-${timeIndex}`;
+                      
+                      // Skip if this cell was already rendered as part of a rowspan
+                      if (renderedCells.has(cellKey)) {
+                        return null;
+                      }
+
+                      const dayCourses = weekSchedule[dayKey] || [];
+                      const courseAtTime = dayCourses.find(c => c.startTime <= time && c.endTime > time);
+
+                      if (courseAtTime && courseAtTime.startTime === time) {
+                        const rowspan = getTimeSlotRowspan(courseAtTime);
+                        const status = getCourseStatus(courseAtTime, day);
+                        const statusBgColor = status === 'online' ? 'bg-blue-500' : status === 'onsite' ? 'bg-green-500' : 'bg-slate-500';
+                        const statusIcon = status === 'online' ? '🌐' : status === 'onsite' ? '🏫' : '❓';
+                        
+                        // Mark cells that will be covered by this rowspan
+                        for (let i = 0; i < rowspan; i++) {
+                          renderedCells.add(`${dayKey}-${timeIndex + i}`);
+                        }
+
+                        return (
+                          <td 
+                            key={dayKey} 
+                            rowSpan={rowspan}
+                            className="border border-slate-200 dark:border-slate-700 p-0 align-top"
+                            style={{ backgroundColor: hexToRgba(courseAtTime.color, 0.15) }}
+                          >
+                            <div 
+                              className="cursor-pointer hover:opacity-80 transition-opacity h-full flex flex-col"
+                              onClick={() => setSelectedCourse(courseAtTime)}
+                            >
+                              {/* Status Bar */}
+                              <div className={`${statusBgColor} text-white px-2 py-1 text-[10px] font-bold flex items-center justify-center gap-1`}>
+                                <span>{statusIcon}</span>
+                              </div>
+                              
+                              {/* Course Info */}
+                              <div className="p-2 flex-1">
+                                <div className="font-medium text-xs">{courseAtTime.name}</div>
+                                <div className="text-slate-600 dark:text-slate-300 text-[10px]">{courseAtTime.code}</div>
+                                <div className="text-slate-500 text-[10px] mt-1">{courseAtTime.startTime}-{courseAtTime.endTime}</div>
+                              </div>
+                            </div>
+                          </td>
+                        );
+                      } else if (!courseAtTime) {
+                        return (
+                          <td key={dayKey} className="border border-slate-200 dark:border-slate-700 p-1">
+                          </td>
+                        );
+                      }
+                      
+                      return null;
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Course Detail Modal */}
+      <AnimatePresence>
+        {selectedCourse && (
+          <Modal onClose={() => setSelectedCourse(null)}>
+            <div className="text-lg font-semibold mb-4">{selectedCourse.name}</div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-slate-500">รหัสวิชา</label>
+                <div className="font-medium">{selectedCourse.code}</div>
+              </div>
+              {selectedCourse.room && (
+                <div>
+                  <label className="text-xs text-slate-500">ห้องเรียน</label>
+                  <div className="font-medium">{selectedCourse.room}</div>
+                </div>
+              )}
+              {selectedCourse.pRoom && (
+                <div>
+                  <label className="text-xs text-slate-500">ห้อง P</label>
+                  <div className="font-medium">{selectedCourse.pRoom}</div>
+                </div>
+              )}
+              {selectedCourse.teacher && (
+                <div>
+                  <label className="text-xs text-slate-500">อาจารย์</label>
+                  <div className="font-medium">{selectedCourse.teacher}</div>
+                </div>
+              )}
+              <div>
+                <label className="text-xs text-slate-500">เวลาเรียน</label>
+                <div className="font-medium">{selectedCourse.startTime} - {selectedCourse.endTime}</div>
+              </div>
+              <div>
+                <label className="text-xs text-slate-500">เงื่อนไขการเรียน</label>
+                <div className="font-medium">
+                  {selectedCourse.scheduleType === 'odd-onsite' && 'เข้าชั้นเรียนในสัปดาห์คี่ / ออนไลน์ในสัปดาห์คู่'}
+                  {selectedCourse.scheduleType === 'even-onsite' && 'เข้าชั้นเรียนในสัปดาห์คู่ / ออนไลน์ในสัปดาห์คี่'}
+                  {selectedCourse.scheduleType === 'online-always' && 'ออนไลน์ตลอด'}
+                  {selectedCourse.scheduleType === 'onsite-always' && 'เรียนที่มหาลัยตลอด'}
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <Button onClick={() => setSelectedCourse(null)}>ปิด</Button>
+            </div>
           </Modal>
         )}
       </AnimatePresence>
@@ -1167,17 +1471,163 @@ function ReminderPicker({value, onChange}){
         </GhostButton>
       ))}
     </div>
-  )
+  );
 }
 
+function AddCourseModal({course, onClose, onSave}) {
+  const [form, setForm] = useState(course || {
+    name: '',
+    code: '',
+    room: '',
+    pRoom: '',
+    teacher: '',
+    dayOfWeek: 1, // Monday
+    startTime: '09:00',
+    endTime: '12:00',
+    scheduleType: 'odd-onsite',
+    color: '#6366f1'
+  });
 
+  const handleSubmit = () => {
+    if (!form.name || !form.code) {
+      alert('กรุณากรอกชื่อวิชาและรหัสวิชา');
+      return;
+    }
+    onSave(form);
+  };
 
-
+  return (
+    <Modal onClose={onClose}>
+      <div className="text-lg font-semibold mb-4">{course ? 'แก้ไขวิชาเรียน' : 'เพิ่มวิชาเรียนใหม่'}</div>
+      <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+        <div>
+          <label className="text-xs text-slate-500">ชื่อวิชา</label>
+          <Input 
+            value={form.name} 
+            onChange={e => setForm({...form, name: e.target.value})} 
+            placeholder="เช่น ศาสนานำชีวิต"
+            autoFocus
+          />
+        </div>
+        <div>
+          <label className="text-xs text-slate-500">รหัสวิชา</label>
+          <Input 
+            value={form.code} 
+            onChange={e => setForm({...form, code: e.target.value})} 
+            placeholder="เช่น 002125"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs text-slate-500">ห้องเรียน</label>
+            <Input 
+              value={form.room} 
+              onChange={e => setForm({...form, room: e.target.value})} 
+              placeholder="เช่น 9.06.06"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-500">ห้อง P</label>
+            <Input 
+              value={form.pRoom} 
+              onChange={e => setForm({...form, pRoom: e.target.value})} 
+              placeholder="เช่น P3"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="text-xs text-slate-500">อาจารย์</label>
+          <Input 
+            value={form.teacher} 
+            onChange={e => setForm({...form, teacher: e.target.value})} 
+            placeholder="ชื่ออาจารย์ผู้สอน"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-slate-500">วันเรียน</label>
+          <div className="flex flex-wrap gap-2 mt-1">
+            {[
+              {value: 1, label: 'จันทร์'},
+              {value: 2, label: 'อังคาร'},
+              {value: 3, label: 'พุธ'},
+              {value: 4, label: 'พฤหัสบดี'},
+              {value: 5, label: 'ศุกร์'},
+            ].map(day => (
+              <GhostButton 
+                key={day.value}
+                onClick={() => setForm({...form, dayOfWeek: day.value})}
+                className={form.dayOfWeek === day.value ? 'bg-indigo-500 !text-white' : 'bg-white/40'}
+              >
+                {day.label}
+              </GhostButton>
+            ))}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs text-slate-500">เวลาเริ่ม</label>
+            <Input 
+              type="time"
+              value={form.startTime} 
+              onChange={e => setForm({...form, startTime: e.target.value})} 
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-500">เวลาจบ</label>
+            <Input 
+              type="time"
+              value={form.endTime} 
+              onChange={e => setForm({...form, endTime: e.target.value})} 
+            />
+          </div>
+        </div>
+        <div>
+          <label className="text-xs text-slate-500 mb-2 block">เงื่อนไขการเรียน</label>
+          <div className="space-y-2">
+            {[
+              {value: 'odd-onsite', label: 'เข้าชั้นเรียนในสัปดาห์คี่ / ออนไลน์ในสัปดาห์คู่'},
+              {value: 'even-onsite', label: 'เข้าชั้นเรียนในสัปดาห์คู่ / ออนไลน์ในสัปดาห์คี่'},
+              {value: 'online-always', label: 'ออนไลน์ตลอด'},
+              {value: 'onsite-always', label: 'เรียนที่มหาลัยตลอด'},
+            ].map(type => (
+              <label key={type.value} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-100/50 dark:hover:bg-slate-800/50 cursor-pointer">
+                <input 
+                  type="radio"
+                  name="scheduleType"
+                  value={type.value}
+                  checked={form.scheduleType === type.value}
+                  onChange={e => setForm({...form, scheduleType: e.target.value})}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm">{type.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="text-xs text-slate-500">สีประจำวิชา</label>
+          <Input 
+            type="color"
+            value={form.color} 
+            onChange={e => setForm({...form, color: e.target.value})} 
+            className="w-full h-12 p-1"
+          />
+        </div>
+      </div>
+      <div className="mt-6 flex justify-end gap-2">
+        <GhostButton onClick={onClose}>ยกเลิก</GhostButton>
+        <Button onClick={handleSubmit}><Check className="h-4 w-4"/> บันทึก</Button>
+      </div>
+    </Modal>
+  );
+}
 
 function Settings({state, dispatch, userId, onLogout, setView}){
   const fileRef = useRef(null);
   const [addingSubject, setAddingSubject] = useState(false);
   const [editingSubject, setEditingSubject] = useState(null); // This will hold the subject object being edited
+  const [addingCourse, setAddingCourse] = useState(false);
+  const [editingCourse, setEditingCourse] = useState(null);
 
   const nameRef = useRef(null);
   const colorRef = useRef(null);
@@ -1208,6 +1658,16 @@ function Settings({state, dispatch, userId, onLogout, setView}){
   const handleDeleteSubject = (subjectId) => {
     if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายวิชานี้และงานทั้งหมดที่เกี่ยวข้อง?')) {
       dispatch({ type: 'deleteSubject', id: subjectId });
+    }
+  };
+
+  const handleEditCourse = (course) => {
+    setEditingCourse(course);
+  };
+
+  const handleDeleteCourse = (courseId) => {
+    if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบวิชาเรียนนี้?')) {
+      dispatch({ type: 'deleteCourse', id: courseId });
     }
   };
 
@@ -1323,6 +1783,48 @@ function Settings({state, dispatch, userId, onLogout, setView}){
               <Button onClick={saveEditSubject}><Check className="h-4 w-4"/> บันทึก</Button>
             </div>
           </Modal>
+        )}
+      </AnimatePresence>
+
+      <Card>
+        <SectionTitle>จัดการตารางเรียน</SectionTitle>
+        <div className="space-y-2 mb-4">
+          {state.courses.map(c => (
+            <div key={c.id} className="flex items-center p-2 rounded-lg bg-slate-100/50 dark:bg-slate-800/50 group">
+              <span className="w-3 h-3 rounded-full mr-3" style={{backgroundColor: c.color}}></span>
+              <div className="flex-1">
+                <div className="font-medium">{c.name}</div>
+                <div className="text-xs text-slate-500">{c.code} • {['', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์'][c.dayOfWeek]} {c.startTime}-{c.endTime}</div>
+              </div>
+              <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <GhostButton onClick={() => handleEditCourse(c)} className="!p-2"><Pencil className="h-4 w-4"/></GhostButton>
+                <GhostButton onClick={() => handleDeleteCourse(c.id)} className="!p-2 text-rose-500"><Trash2 className="h-4 w-4"/></GhostButton>
+              </div>
+            </div>
+          ))}
+        </div>
+        <Button onClick={() => setAddingCourse(true)}><Plus className="h-4 w-4"/> เพิ่มวิชาเรียนใหม่</Button>
+      </Card>
+
+      <AnimatePresence>
+        {addingCourse && (
+          <AddCourseModal onClose={() => setAddingCourse(false)} onSave={(course) => {
+            dispatch({type:'addCourse', payload:{...course, id:uid(), createdAt:Date.now(), updatedAt:Date.now()}});
+            setAddingCourse(false);
+          }} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {editingCourse && (
+          <AddCourseModal 
+            course={editingCourse} 
+            onClose={() => setEditingCourse(null)} 
+            onSave={(course) => {
+              dispatch({type:'updateCourse', payload:course});
+              setEditingCourse(null);
+            }} 
+          />
         )}
       </AnimatePresence>
 
