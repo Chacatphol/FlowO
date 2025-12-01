@@ -1,0 +1,91 @@
+/* Custom styles for react-day-picker to match the app's theme */
+
+/* --- การตั้งค่าหลักของปฏิทิน --- */
+.rdp {
+  /* ตัวแปรสำหรับปรับแต่งสีและขนาดต่างๆ */
+  --rdp-cell-size: 36px; /* ขนาดของแต่ละช่องวันที่ */
+  --rdp-accent-color: #4f46e5 !important; /* สีหลัก (ม่วง) สำหรับวันที่ถูกเลือก */
+  --rdp-background-color: #4f46e520 !important; /* สีพื้นหลังสำหรับช่วงวันที่ (โปร่งใส) */ 
+  --rdp-accent-color-dark: #3b82f6 !important; /* สีหลักสำหรับโหมดมืด */
+  --rdp-background-color-dark: #3b82f640 !important; /* สีพื้นหลังช่วงวันที่สำหรับโหมดมืด */
+  --rdp-selected-focus-color: #818cf8 !important; /* สีม่วงอ่อนลง เมื่อวันที่ถูกเลือกได้รับ focus */
+  
+  /* การจัดวางและขนาด */
+  margin: 0 auto !important; /* จัดปฏิทินให้อยู่ตรงกลาง */
+  max-width: 350px; /* กำหนดความกว้างสูงสุด ไม่ให้ใหญ่เกินไปบนจอใหญ่ */
+  width: 100%; /* ทำให้ปฏิทินปรับขนาดตามกรอบที่ครอบอยู่ */
+}
+
+/* --- สไตล์สำหรับโหมดมืด (Dark Mode) --- */
+.dark .rdp {
+  --rdp-accent-color: var(--rdp-accent-color-dark) !important; /* ใช้สีหลักของโหมดมืด */
+  --rdp-background-color: var(--rdp-background-color-dark) !important; /* ใช้สีพื้นหลังของโหมดมืด */
+}
+
+/* --- สไตล์ของวันที่ถูกเลือก --- */
+.rdp-day_selected, .rdp-day_selected:focus, .rdp-day_selected:focus-visible, .rdp-day_selected:active {
+  color: #ffffff !important; /* ตัวอักษรสีขาว */
+  background-color: var(--rdp-accent-color) !important; /* พื้นหลังสีม่วง */
+  border-radius: 0.8rem !important; /* ทำให้มุมโค้งมน */
+  outline: none !important; /* ลบเส้นกรอบเมื่อ focus */
+  box-shadow: none !important; /* ลบเงาเมื่อ focus */
+}
+
+/* --- สไตล์ของวันที่ปัจจุบัน (Today) --- */
+.rdp-day_today {
+  font-weight: bold; /* ทำให้เป็นตัวหนา */
+  color: var(--rdp-accent-color) !important; /* ตัวอักษรสีม่วง */
+  border-radius: 0.8rem !important; /* ทำให้มุมโค้งมน */
+}
+
+/* --- สไตล์ของวันที่อยู่ "ระหว่าง" การเลือกช่วง (Range) --- */
+.rdp-day_range_middle {
+  background-color: transparent !important; /* ทำให้พื้นหลังของช่องใส */
+  background-image: linear-gradient(to right, var(--rdp-background-color), var(--rdp-background-color)); /* สร้างแถบสีโปร่งแสงพาดกลาง */
+  background-repeat: no-repeat; /* ไม่ต้องทำซ้ำแถบสี */
+  background-position: center; /* จัดแถบสีให้อยู่กลางช่อง */
+  background-size: 100% 70%; /* ทำให้แถบสีบางลง (สูง 70% ของช่อง) */
+  color: inherit !important; /* ใช้สีตัวอักษรปกติ */
+  border-radius: 0 !important; /* ทำให้เป็นสี่เหลี่ยม ไม่มีมุมโค้ง */
+}
+
+/* --- สไตล์ของวัน "เริ่มต้น" และ "สิ้นสุด" ของช่วง --- */
+.rdp-day_range_start {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.rdp-day_range_end {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+/* --- สไตล์ของหัวเรื่องเดือน (เช่น "ตุลาคม 2024") --- */
+.rdp-caption_label {
+  font-weight: 600 !important; /* ทำให้เป็นตัวหนาขึ้นเล็กน้อย */
+}
+
+/* --- สไตล์ของปุ่มเลื่อนเดือน (ซ้าย-ขวา) --- */
+.rdp-nav_button {
+  border-radius: 0.5rem !important; /* ทำให้มุมโค้งมน */
+}
+
+/* --- แก้ปัญหา Focus: เมื่อ focus วันที่ "ยังไม่ได้เลือก" --- */
+.rdp-day:focus-visible:not(.rdp-day_selected) {
+  color: inherit !important; /* คงสีตัวอักษรเดิมไว้ (ไม่เปลี่ยนเป็นสีอื่น) */
+  outline: none !important; /* ลบเส้นกรอบ focus บนมือถือ */
+  background-color: rgba(0, 0, 0, 0.05) !important; /* เพิ่มพื้นหลังสีเทาจางๆ เมื่อ focus */
+}
+
+/* --- แก้ปัญหา Focus: เมื่อ focus วันที่ "ถูกเลือกแล้ว" --- */
+.rdp-day_selected:focus-visible {
+  background-color: var(--rdp-selected-focus-color) !important; /* ใช้สีม่วงอ่อนที่กำหนดไว้ */
+}
+
+/* --- ทำให้ปฏิทินปรับขนาดตามหน้าจอ (Responsive) สำหรับมือถือ --- */
+@media (max-width: 640px) {
+  .rdp {
+    --rdp-cell-size: 30px; /* ลดขนาดช่องวันที่ให้เล็กลงสำหรับมือถือ */
+    font-size: 0.8rem; /* ปรับขนาดตัวอักษรให้เหมาะสมกับมือถือ */
+  }
+}
