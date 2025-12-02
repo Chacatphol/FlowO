@@ -771,15 +771,12 @@ function ScheduleView({state, dispatch}) {
   }, [state.courses, selectedDate]);
 
   const weekDays = useMemo(() => {
-    const days = [];
-    for (let i = 1; i <= 5; i++) { // Monday to Friday
-      const date = new Date(selectedDate);
-      const currentDay = date.getDay();
-      const diff = i - (currentDay === 0 ? 7 : currentDay);
-      date.setDate(date.getDate() + diff);
-      days.push(date);
-    }
-    return days;
+    // Get the start of the week (Sunday) for the selected date
+    const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 }); // 0 = Sunday
+    const weekEnd = addDays(weekStart, 6); // Saturday
+    
+    // Get all 7 days from Sunday to Saturday
+    return eachDayOfInterval({ start: weekStart, end: weekEnd });
   }, [selectedDate]);
 
   const weekSchedule = useMemo(() => {
@@ -903,7 +900,10 @@ function ScheduleView({state, dispatch}) {
 
       {/* Weekly Overview */}
       <Card>
-        <SectionTitle>ตารางเรียนรายสัปดาห์ (ภาพรวม)</SectionTitle>
+        <div className="flex items-center justify-between mb-2">
+          <SectionTitle>ตารางเรียนรายสัปดาห์ (ภาพรวม)</SectionTitle>
+          <div className="text-xs text-slate-500">💡 คลิกที่วิชาเพื่อแก้ไขสถานะชั่วคราว</div>
+        </div>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
@@ -954,8 +954,9 @@ function ScheduleView({state, dispatch}) {
                             style={{ backgroundColor: hexToRgba(courseAtTime.color, 0.15) }}
                           >
                             <div 
-                              className="cursor-pointer hover:opacity-80 transition-opacity h-full flex flex-col"
+                              className="cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all duration-200 h-full flex flex-col group"
                               onClick={() => setSelectedCourse({ course: courseAtTime, date: day })}
+                              title="คลิกเพื่อดูรายละเอียดและแก้ไขสถานะ"
                             >
                               {/* Status Bar */}
                               <div 
@@ -1042,25 +1043,29 @@ function ScheduleView({state, dispatch}) {
               </div>
 
               {/* Weekly Override Section */}
-              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="text-xs text-slate-500">สถานะสำหรับสัปดาห์นี้</label>
-                    <div className="font-bold text-lg flex items-center gap-2">
-                       {isOverridden && <RefreshCw className="h-4 w-4 animate-spin text-indigo-500" />}
+              <div className="mt-6 pt-4 border-t-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+                <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">⚡ เปลี่ยนแปลงชั่วคราวสำหรับสัปดาห์นี้</div>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <label className="text-xs text-slate-500">สถานะปัจจุบัน</label>
+                    <div className="font-bold text-xl flex items-center gap-2 mt-1">
+                       {isOverridden && <RefreshCw className="h-5 w-5 animate-spin text-indigo-500" />}
                        {status === 'online' ? '🌐 ออนไลน์' : '🏫 ออนไซต์'}
                     </div>
+                    {isOverridden && (
+                      <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1 font-medium">
+                        ✨ มีการเปลี่ยนแปลงพิเศษ
+                      </p>
+                    )}
                   </div>
-                  <Button onClick={() => handleOverride(course, date)}>
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                  <Button 
+                    onClick={() => handleOverride(course, date)}
+                    className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold px-6 py-3 shadow-lg"
+                  >
+                    <RefreshCw className="h-5 w-5 mr-2" />
                     เปลี่ยนเป็น {nextStatus === 'online' ? '🌐 ออนไลน์' : '🏫 ออนไซต์'}
                   </Button>
                 </div>
-                {isOverridden && (
-                  <p className="text-xs text-slate-500 mt-2">
-                    มีการเปลี่ยนแปลงสถานะสำหรับสัปดาห์นี้.
-                  </p>
-                )}
               </div>
 
               <div className="mt-6 flex justify-end">
