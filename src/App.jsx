@@ -79,10 +79,19 @@ const hexToRgba = (hex, alpha = 1) => {
 };
 
 // Calculate odd/even week (สัปดาห์คู่/คี่)
-// Week starts on Sunday. Week of Nov 30, 2025 is week 1 (odd).
+// Week starts on Sunday and ends on Saturday (7 days per week).
+// Week of Nov 30, 2025 (Sunday) is week 1 (odd).
 const getWeekType = (date) => {
-  const startDate = new Date('2025-11-30'); // Sunday
-  const weeksDiff = Math.floor(differenceInDays(date, startDate) / 7);
+  const referenceDate = new Date('2025-11-30'); // Sunday, Nov 30, 2025 - Week 1 (odd)
+  
+  // Get the start of the week (Sunday) for both dates
+  const weekStartOfDate = startOfWeek(date, { weekStartsOn: 0 }); // 0 = Sunday
+  const weekStartOfReference = startOfWeek(referenceDate, { weekStartsOn: 0 });
+  
+  // Calculate the number of weeks between the two Sunday dates
+  const weeksDiff = Math.floor(differenceInDays(weekStartOfDate, weekStartOfReference) / 7);
+  
+  // Week 0 (reference week) is odd, week 1 is even, week 2 is odd, etc.
   return weeksDiff % 2 === 0 ? 'odd' : 'even';
 };
 
