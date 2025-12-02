@@ -1675,7 +1675,7 @@ function AddCourseModal({course, onClose, onSave}) {
               {value: 'odd-onsite', label: 'เข้าชั้นเรียนในสัปดาห์คี่ / ออนไลน์ในสัปดาห์คู่'},
               {value: 'even-onsite', label: 'เข้าชั้นเรียนในสัปดาห์คู่ / ออนไลน์ในสัปดาห์คี่'},
               {value: 'online-always', label: 'ออนไลน์ตลอด'},
-              {value: 'onsite-always', label: 'เรียนที่มหาลัยตลอด'},
+              {value: 'onsite-always', label: 'มหาลัยตลอด'},
             ].map(type => (
               <label key={type.value} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-100/50 dark:hover:bg-slate-800/50 cursor-pointer">
                 <input 
