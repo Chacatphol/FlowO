@@ -17,10 +17,8 @@ import './day-picker.css';
 const initialState = {
   subjects: [], // {id, name, color}
   tasks: [], // {id, subjectId, title, detail, startAt|null, dueAt|null, taskType:'deadline'|'event', link, status:'todo'|'doing'|'done', category:'เรียน'|'งาน'|'ส่วนตัว', reminders:[{type:'minutes'|'hours'|'days', amount:number}], createdAt, updatedAt}
-<<<<<<< HEAD
   courses: [], // {id, name, code, room, pRoom, teacher, dayOfWeek:1-5, startTime, endTime, scheduleType:'odd-onsite'|'even-onsite'|'online-always'|'onsite-always', color, createdAt, updatedAt}
-=======
->>>>>>> dbcbef9a01665a595a704afee09b5d35aac32c06
+  scheduleOverrides: {},
   lastLogin: null,
   loginStreak: 0,
 }
@@ -37,10 +35,8 @@ function reducer(state, action){
         ...initialState,
         subjects: Array.isArray(loaded.subjects) ? loaded.subjects.filter(s => s && typeof s === 'object') : [],
         tasks: Array.isArray(loaded.tasks) ? loaded.tasks.filter(t => t && typeof t === 'object') : [],
-<<<<<<< HEAD
         courses: Array.isArray(loaded.courses) ? loaded.courses.filter(c => c && typeof c === 'object') : [],
-=======
->>>>>>> dbcbef9a01665a595a704afee09b5d35aac32c06
+        scheduleOverrides: typeof loaded.scheduleOverrides === 'object' && loaded.scheduleOverrides !== null ? loaded.scheduleOverrides : {},
         lastLogin: loaded.lastLogin || null,
         loginStreak: loaded.loginStreak || 0,
       };
@@ -51,14 +47,21 @@ function reducer(state, action){
     case 'addTask': return { ...state, tasks:[...state.tasks, action.payload] }
     case 'updateTask': return { ...state, tasks: state.tasks.map(t=>t.id===action.payload.id? {...t,...action.payload, updatedAt:Date.now()}:t) }
     case 'deleteTask': return { ...state, tasks: state.tasks.filter(t=>t.id!==action.id) }
-<<<<<<< HEAD
     case 'addCourse': return { ...state, courses:[...state.courses, action.payload] }
     case 'updateCourse': return { ...state, courses: state.courses.map(c=>c.id===action.payload.id? {...c,...action.payload, updatedAt:Date.now()}:c) }
     case 'deleteCourse': return { ...state, courses: state.courses.filter(c=>c.id!==action.id) }
-=======
->>>>>>> dbcbef9a01665a595a704afee09b5d35aac32c06
+    case 'setScheduleOverride': {
+      const { key, status } = action.payload;
+      return { ...state, scheduleOverrides: { ...state.scheduleOverrides, [key]: status } };
+    }
+    case 'removeScheduleOverride': {
+      const { key } = action.payload;
+      const newOverrides = { ...state.scheduleOverrides };
+      delete newOverrides[key];
+      return { ...state, scheduleOverrides: newOverrides };
+    }
     case 'updateLoginStreak': return { ...state, lastLogin: action.payload.lastLogin, loginStreak: action.payload.loginStreak }
-    case 'reset': return initialState
+    case 'reset': return { ...initialState, scheduleOverrides: {} }
     default: return state
   }
 }
@@ -75,28 +78,37 @@ const hexToRgba = (hex, alpha = 1) => {
   return `rgba(${(c >> 16) & 255}, ${(c >> 8) & 255}, ${c & 255}, ${alpha})`;
 };
 
-<<<<<<< HEAD
 // Calculate odd/even week (สัปดาห์คู่/คี่)
-// Week starting Dec 1, 2025 is week 1 (odd)
+// Week starts on Sunday. Week of Nov 30, 2025 is week 1 (odd).
 const getWeekType = (date) => {
-  const startDate = new Date('2025-12-01');
+  const startDate = new Date('2025-11-30'); // Sunday
   const weeksDiff = Math.floor(differenceInDays(date, startDate) / 7);
   return weeksDiff % 2 === 0 ? 'odd' : 'even';
 };
 
-// Get course status (online/onsite) based on schedule type and current week
-const getCourseStatus = (course, date) => {
+// Get course status (online/onsite) based on schedule type and current week, with overrides
+const getCourseStatus = (course, date, scheduleOverrides = {}) => {
+  const weekStartDate = startOfWeek(date, { weekStartsOn: 0 });
+  const weekStartDateString = format(weekStartDate, 'yyyy-MM-dd');
+  const overrideKey = `${course.id}_${weekStartDateString}`;
+
+  if (scheduleOverrides[overrideKey]) {
+    return { status: scheduleOverrides[overrideKey], isOverridden: true };
+  }
+
   const weekType = getWeekType(date);
-  
-  if (course.scheduleType === 'online-always') return 'online';
-  if (course.scheduleType === 'onsite-always') return 'onsite';
-  if (course.scheduleType === 'odd-onsite') {
-    return weekType === 'odd' ? 'onsite' : 'online';
+  let status = 'unknown';
+
+  if (course.scheduleType === 'online-always') status = 'online';
+  else if (course.scheduleType === 'onsite-always') status = 'onsite';
+  else if (course.scheduleType === 'odd-onsite') {
+    status = weekType === 'odd' ? 'onsite' : 'online';
   }
-  if (course.scheduleType === 'even-onsite') {
-    return weekType === 'even' ? 'onsite' : 'online';
+  else if (course.scheduleType === 'even-onsite') {
+    status = weekType === 'even' ? 'onsite' : 'online';
   }
-  return 'unknown';
+
+  return { status, isOverridden: false };
 };
 
 // Get courses for a specific day
@@ -106,9 +118,6 @@ const getCoursesForDay = (courses, date) => {
     .filter(c => c.dayOfWeek === dayOfWeek)
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 };
-
-=======
->>>>>>> dbcbef9a01665a595a704afee09b5d35aac32c06
 // --- Data layer (Firebase) with Auth ---
 function usePersistentState(userId){
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -299,10 +308,7 @@ export default function App(){
   const navItems = [
     { key: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
     { key: 'tasks', label: 'Tasks', icon: ListTodo },
-<<<<<<< HEAD
     { key: 'schedule', label: 'ตารางเรียน', icon: CalendarIcon },
-=======
->>>>>>> dbcbef9a01665a595a704afee09b5d35aac32c06
     { key: 'settings', label: 'ตั้งค่า', icon: Layers },
   ];
 
@@ -364,10 +370,7 @@ export default function App(){
             <motion.div key={view} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.12 }}>
               {view === 'dashboard' && <Dashboard state={state} tasks={tasks} dueSoon={dueSoon} progressToday={progressToday} lazyScore={lazyScore} setView={setView} setSelectedSubject={setSelectedSubject} />}
               {view === 'tasks' && <TasksView state={state} dispatch={dispatch} tasks={tasks} filteredTasks={filteredTasks} setQuery={setQuery} query={query} selectedSubject={selectedSubject} setSelectedSubject={setSelectedSubject} deleteMode={deleteMode} selectedTasksForDeletion={selectedTasksForDeletion} setSelectedTasksForDeletion={setSelectedTasksForDeletion} />}
-<<<<<<< HEAD
               {view === 'schedule' && <ScheduleView state={state} dispatch={dispatch} />}
-=======
->>>>>>> dbcbef9a01665a595a704afee09b5d35aac32c06
               {view === 'settings' && <Settings state={state} dispatch={dispatch} userId={user?.uid} onLogout={handleLogout} setView={setView} />}
               {view === 'history' && <HistoryView tasks={archivedTasks} dispatch={dispatch} />}
             </motion.div>
@@ -744,7 +747,6 @@ function Dashboard({state, tasks, dueSoon, progressToday, lazyScore, setView, se
   );
 }
 
-<<<<<<< HEAD
 function ScheduleView({state, dispatch}) {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -822,13 +824,29 @@ function ScheduleView({state, dispatch}) {
         {todayCourses.length > 0 ? (
           <div className="space-y-3 mt-4">
             {todayCourses.map(course => {
-              const status = getCourseStatus(course, selectedDate);
-              const statusBgColor = status === 'online' 
+              const { status, isOverridden } = getCourseStatus(course, selectedDate, state.scheduleOverrides);
+              const statusBgColor = status === 'online'
                 ? 'bg-blue-500'
                 : status === 'onsite'
                 ? 'bg-green-500'
                 : 'bg-slate-500';
               const statusLabel = status === 'online' ? '🌐 ออนไลน์' : status === 'onsite' ? '🏫 ออนไซต์' : '❓ ไม่ทราบ';
+              const nextStatusToSet = status === 'online' ? 'onsite' : 'online';
+
+              const handleOverride = (e) => {
+                e.stopPropagation();
+                const weekStartDate = startOfWeek(selectedDate, { weekStartsOn: 0 });
+                const weekStartDateString = format(weekStartDate, 'yyyy-MM-dd');
+                const overrideKey = `${course.id}_${weekStartDateString}`;
+                
+                const defaultStatusResult = getCourseStatus(course, selectedDate, {});
+
+                if (nextStatusToSet === defaultStatusResult.status) {
+                    dispatch({ type: 'removeScheduleOverride', payload: { key: overrideKey } });
+                } else {
+                    dispatch({ type: 'setScheduleOverride', payload: { key: overrideKey, status: nextStatusToSet } });
+                }
+              };
 
               return (
                 <div 
@@ -839,11 +857,19 @@ function ScheduleView({state, dispatch}) {
                 >
                   {/* Status Bar */}
                   <div className={`${statusBgColor} text-white px-4 py-2 font-bold text-sm flex items-center justify-between`}>
-                    <span>{statusLabel}</span>
-                    <span className="text-xs opacity-90">
-                      <Clock className="h-3 w-3 inline mr-1"/>
-                      {course.startTime} - {course.endTime}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {isOverridden && <RefreshCw className="h-4 w-4 animate-spin" />}
+                      <span>{statusLabel}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <GhostButton onClick={handleOverride} className="!py-1 !px-2 text-xs !text-white/80 hover:!text-white bg-black/10 hover:bg-black/20 rounded-md">
+                          เปลี่ยนเป็น {nextStatusToSet === 'online' ? 'ออนไลน์' : 'ออนไซต์'}
+                        </GhostButton>
+                        <span className="text-xs opacity-90">
+                          <Clock className="h-3 w-3 inline mr-1"/>
+                          {course.startTime} - {course.endTime}
+                        </span>
+                    </div>
                   </div>
                   
                   {/* Course Info */}
@@ -898,7 +924,6 @@ function ScheduleView({state, dispatch}) {
                       const dayKey = format(day, 'yyyy-MM-dd');
                       const cellKey = `${dayKey}-${timeIndex}`;
                       
-                      // Skip if this cell was already rendered as part of a rowspan
                       if (renderedCells.has(cellKey)) {
                         return null;
                       }
@@ -908,15 +933,30 @@ function ScheduleView({state, dispatch}) {
 
                       if (courseAtTime && courseAtTime.startTime === time) {
                         const rowspan = getTimeSlotRowspan(courseAtTime);
-                        const status = getCourseStatus(courseAtTime, day);
+                        const { status, isOverridden } = getCourseStatus(courseAtTime, day, state.scheduleOverrides);
                         const statusBgColor = status === 'online' ? 'bg-blue-500' : status === 'onsite' ? 'bg-green-500' : 'bg-slate-500';
                         const statusIcon = status === 'online' ? '🌐' : status === 'onsite' ? '🏫' : '❓';
                         const statusText = status === 'online' ? 'ออนไลน์' : status === 'onsite' ? 'ออนไซต์' : 'ไม่ทราบ';
                         
-                        // Mark cells that will be covered by this rowspan
                         for (let i = 0; i < rowspan; i++) {
                           renderedCells.add(`${dayKey}-${timeIndex + i}`);
                         }
+
+                        const handleWeeklyOverride = (e) => {
+                            e.stopPropagation();
+                            const weekStartDate = startOfWeek(day, { weekStartsOn: 0 });
+                            const weekStartDateString = format(weekStartDate, 'yyyy-MM-dd');
+                            const overrideKey = `${courseAtTime.id}_${weekStartDateString}`;
+                            
+                            const defaultStatusResult = getCourseStatus(courseAtTime, day, {});
+                            const nextStatusToSet = status === 'online' ? 'onsite' : 'online';
+
+                            if (nextStatusToSet === defaultStatusResult.status) {
+                                dispatch({ type: 'removeScheduleOverride', payload: { key: overrideKey } });
+                            } else {
+                                dispatch({ type: 'setScheduleOverride', payload: { key: overrideKey, status: nextStatusToSet } });
+                            }
+                        };
 
                         return (
                           <td 
@@ -930,7 +970,12 @@ function ScheduleView({state, dispatch}) {
                               onClick={() => setSelectedCourse(courseAtTime)}
                             >
                               {/* Status Bar */}
-                              <div className={`${statusBgColor} text-white px-2 py-1 text-[10px] font-bold flex items-center justify-center gap-1`}>
+                              <div 
+                                className={`${statusBgColor} text-white px-2 py-1 text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer`}
+                                onClick={handleWeeklyOverride}
+                                title="คลิกเพื่อเปลี่ยนสถานะสำหรับสัปดาห์นี้"
+                              >
+                                {isOverridden && <RefreshCw className="h-3 w-3 animate-spin" />}
                                 <span>{statusIcon}</span>
                                 <span>{statusText}</span>
                               </div>
@@ -1013,8 +1058,6 @@ function ScheduleView({state, dispatch}) {
   );
 }
 
-=======
->>>>>>> dbcbef9a01665a595a704afee09b5d35aac32c06
 function TasksView({state, dispatch, tasks, filteredTasks, setQuery, query, selectedSubject, setSelectedSubject, deleteMode, selectedTasksForDeletion, setSelectedTasksForDeletion}){
   const [editingTask, setEditingTask] = useState(null);
 
@@ -1494,7 +1537,6 @@ function ReminderPicker({value, onChange}){
         </GhostButton>
       ))}
     </div>
-<<<<<<< HEAD
   );
 }
 
@@ -1645,24 +1687,14 @@ function AddCourseModal({course, onClose, onSave}) {
     </Modal>
   );
 }
-=======
-  )
-}
 
-
-
-
->>>>>>> dbcbef9a01665a595a704afee09b5d35aac32c06
 
 function Settings({state, dispatch, userId, onLogout, setView}){
   const fileRef = useRef(null);
   const [addingSubject, setAddingSubject] = useState(false);
   const [editingSubject, setEditingSubject] = useState(null); // This will hold the subject object being edited
-<<<<<<< HEAD
   const [addingCourse, setAddingCourse] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
-=======
->>>>>>> dbcbef9a01665a595a704afee09b5d35aac32c06
 
   const nameRef = useRef(null);
   const colorRef = useRef(null);
@@ -1696,7 +1728,6 @@ function Settings({state, dispatch, userId, onLogout, setView}){
     }
   };
 
-<<<<<<< HEAD
   const handleEditCourse = (course) => {
     setEditingCourse(course);
   };
@@ -1706,9 +1737,6 @@ function Settings({state, dispatch, userId, onLogout, setView}){
       dispatch({ type: 'deleteCourse', id: courseId });
     }
   };
-
-=======
->>>>>>> dbcbef9a01665a595a704afee09b5d35aac32c06
   const exportData = ()=>{
     const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'})
     const url = URL.createObjectURL(blob)
@@ -1825,7 +1853,6 @@ function Settings({state, dispatch, userId, onLogout, setView}){
       </AnimatePresence>
 
       <Card>
-<<<<<<< HEAD
         <SectionTitle>จัดการตารางเรียน</SectionTitle>
         <div className="space-y-2 mb-4">
           {state.courses.map(c => (
@@ -1868,8 +1895,6 @@ function Settings({state, dispatch, userId, onLogout, setView}){
       </AnimatePresence>
 
       <Card>
-=======
->>>>>>> dbcbef9a01665a595a704afee09b5d35aac32c06
         <SectionTitle><Archive className="h-4 w-4"/> ประวัติงาน</SectionTitle>
         <p className="text-sm text-slate-500 mb-3">ดูงานที่เสร็จสิ้นไปแล้ว</p>
         <Button onClick={() => setView('history')}>ไปที่หน้าประวัติงาน</Button>
