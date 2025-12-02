@@ -749,7 +749,7 @@ function Dashboard({state, tasks, dueSoon, progressToday, lazyScore, setView, se
 
 function ScheduleView({state, dispatch}) {
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [selectedCourse, setSelectedCourse] = useState(null); // Will now be { course, date }
 
   const weekType = getWeekType(selectedDate);
   const weekTypeLabel = weekType === 'odd' ? 'สัปดาห์คี่' : 'สัปดาห์คู่';
@@ -791,6 +791,22 @@ function ScheduleView({state, dispatch}) {
     return Math.ceil((endMinutes - startMinutes) / 60);
   };
 
+  const handleOverride = (course, date) => {
+    const { status } = getCourseStatus(course, date, state.scheduleOverrides);
+    const weekStartDate = startOfWeek(date, { weekStartsOn: 0 });
+    const weekStartDateString = format(weekStartDate, 'yyyy-MM-dd');
+    const overrideKey = `${course.id}_${weekStartDateString}`;
+    
+    const defaultStatusResult = getCourseStatus(course, date, {});
+    const nextStatusToSet = status === 'online' ? 'onsite' : 'online';
+
+    if (nextStatusToSet === defaultStatusResult.status) {
+        dispatch({ type: 'removeScheduleOverride', payload: { key: overrideKey } });
+    } else {
+        dispatch({ type: 'setScheduleOverride', payload: { key: overrideKey, status: nextStatusToSet } });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -801,19 +817,19 @@ function ScheduleView({state, dispatch}) {
 
         {/* Date Navigator */}
         <div className="flex items-center justify-between">
-          <GhostButton onClick={() => setSelectedDate(addDays(selectedDate, -1))}>
-            <ChevronLeft className="h-4 w-4"/>
+          <GhostButton onClick={() => setSelectedDate(addDays(selectedDate, -7))}>
+            <ChevronLeft className="h-4 w-4 mr-1"/> สัปดาห์ก่อน
           </GhostButton>
           <div className="text-center flex-1">
             <div className="font-semibold text-lg mb-2">
-              {format(selectedDate, 'EEEE d MMMM yyyy', {locale: th})}
+              สัปดาห์ที่ {format(selectedDate, 'd MMM', {locale: th})}
             </div>
             <div className={`inline-block px-6 py-2 rounded-full font-bold text-lg ${weekTypeColor} animate-pulse`}>
               ✨ {weekTypeLabel} ✨
             </div>
           </div>
-          <GhostButton onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
-            <ChevronRight className="h-4 w-4"/>
+          <GhostButton onClick={() => setSelectedDate(addDays(selectedDate, 7))}>
+            สัปดาห์หน้า <ChevronRight className="h-4 w-4 ml-1"/>
           </GhostButton>
         </div>
       </Card>
@@ -825,33 +841,17 @@ function ScheduleView({state, dispatch}) {
           <div className="space-y-3 mt-4">
             {todayCourses.map(course => {
               const { status, isOverridden } = getCourseStatus(course, selectedDate, state.scheduleOverrides);
-              const statusBgColor = status === 'online'
+              const statusBgColor = status === 'online' 
                 ? 'bg-blue-500'
                 : status === 'onsite'
                 ? 'bg-green-500'
                 : 'bg-slate-500';
               const statusLabel = status === 'online' ? '🌐 ออนไลน์' : status === 'onsite' ? '🏫 ออนไซต์' : '❓ ไม่ทราบ';
-              const nextStatusToSet = status === 'online' ? 'onsite' : 'online';
-
-              const handleOverride = (e) => {
-                e.stopPropagation();
-                const weekStartDate = startOfWeek(selectedDate, { weekStartsOn: 0 });
-                const weekStartDateString = format(weekStartDate, 'yyyy-MM-dd');
-                const overrideKey = `${course.id}_${weekStartDateString}`;
-                
-                const defaultStatusResult = getCourseStatus(course, selectedDate, {});
-
-                if (nextStatusToSet === defaultStatusResult.status) {
-                    dispatch({ type: 'removeScheduleOverride', payload: { key: overrideKey } });
-                } else {
-                    dispatch({ type: 'setScheduleOverride', payload: { key: overrideKey, status: nextStatusToSet } });
-                }
-              };
 
               return (
                 <div 
                   key={course.id}
-                  onClick={() => setSelectedCourse(course)}
+                  onClick={() => setSelectedCourse({ course, date: selectedDate })}
                   className="rounded-xl bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 cursor-pointer transition-all overflow-hidden border-l-4"
                   style={{ borderLeftColor: course.color }}
                 >
@@ -861,15 +861,10 @@ function ScheduleView({state, dispatch}) {
                       {isOverridden && <RefreshCw className="h-4 w-4 animate-spin" />}
                       <span>{statusLabel}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <GhostButton onClick={handleOverride} className="!py-1 !px-2 text-xs !text-white/80 hover:!text-white bg-black/10 hover:bg-black/20 rounded-md">
-                          เปลี่ยนเป็น {nextStatusToSet === 'online' ? 'ออนไลน์' : 'ออนไซต์'}
-                        </GhostButton>
-                        <span className="text-xs opacity-90">
-                          <Clock className="h-3 w-3 inline mr-1"/>
-                          {course.startTime} - {course.endTime}
-                        </span>
-                    </div>
+                    <span className="text-xs opacity-90">
+                      <Clock className="h-3 w-3 inline mr-1"/>
+                      {course.startTime} - {course.endTime}
+                    </span>
                   </div>
                   
                   {/* Course Info */}
@@ -942,22 +937,6 @@ function ScheduleView({state, dispatch}) {
                           renderedCells.add(`${dayKey}-${timeIndex + i}`);
                         }
 
-                        const handleWeeklyOverride = (e) => {
-                            e.stopPropagation();
-                            const weekStartDate = startOfWeek(day, { weekStartsOn: 0 });
-                            const weekStartDateString = format(weekStartDate, 'yyyy-MM-dd');
-                            const overrideKey = `${courseAtTime.id}_${weekStartDateString}`;
-                            
-                            const defaultStatusResult = getCourseStatus(courseAtTime, day, {});
-                            const nextStatusToSet = status === 'online' ? 'onsite' : 'online';
-
-                            if (nextStatusToSet === defaultStatusResult.status) {
-                                dispatch({ type: 'removeScheduleOverride', payload: { key: overrideKey } });
-                            } else {
-                                dispatch({ type: 'setScheduleOverride', payload: { key: overrideKey, status: nextStatusToSet } });
-                            }
-                        };
-
                         return (
                           <td 
                             key={dayKey} 
@@ -967,13 +946,12 @@ function ScheduleView({state, dispatch}) {
                           >
                             <div 
                               className="cursor-pointer hover:opacity-80 transition-opacity h-full flex flex-col"
-                              onClick={() => setSelectedCourse(courseAtTime)}
+                              onClick={() => setSelectedCourse({ course: courseAtTime, date: day })}
                             >
                               {/* Status Bar */}
                               <div 
-                                className={`${statusBgColor} text-white px-2 py-1 text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer`}
-                                onClick={handleWeeklyOverride}
-                                title="คลิกเพื่อเปลี่ยนสถานะสำหรับสัปดาห์นี้"
+                                className={`${statusBgColor} text-white px-2 py-1 text-[10px] font-bold flex items-center justify-center gap-1`}
+                                title="คลิกเพื่อดูรายละเอียดและแก้ไข"
                               >
                                 {isOverridden && <RefreshCw className="h-3 w-3 animate-spin" />}
                                 <span>{statusIcon}</span>
@@ -1008,51 +986,80 @@ function ScheduleView({state, dispatch}) {
 
       {/* Course Detail Modal */}
       <AnimatePresence>
-        {selectedCourse && (
-          <Modal onClose={() => setSelectedCourse(null)}>
-            <div className="text-lg font-semibold mb-4">{selectedCourse.name}</div>
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs text-slate-500">รหัสวิชา</label>
-                <div className="font-medium">{selectedCourse.code}</div>
-              </div>
-              {selectedCourse.room && (
+        {selectedCourse && (() => {
+          const { course, date } = selectedCourse;
+          const { status, isOverridden } = getCourseStatus(course, date, state.scheduleOverrides);
+          const nextStatus = status === 'online' ? 'onsite' : 'online';
+          
+          return (
+            <Modal onClose={() => setSelectedCourse(null)}>
+              <div className="text-lg font-semibold mb-4">{course.name}</div>
+              <div className="space-y-3">
                 <div>
-                  <label className="text-xs text-slate-500">ห้องเรียน</label>
-                  <div className="font-medium">{selectedCourse.room}</div>
+                  <label className="text-xs text-slate-500">รหัสวิชา</label>
+                  <div className="font-medium">{course.code}</div>
                 </div>
-              )}
-              {selectedCourse.pRoom && (
+                {course.room && (
+                  <div>
+                    <label className="text-xs text-slate-500">ห้องเรียน</label>
+                    <div className="font-medium">{course.room}</div>
+                  </div>
+                )}
+                {course.pRoom && (
+                  <div>
+                    <label className="text-xs text-slate-500">ห้อง P</label>
+                    <div className="font-medium">{course.pRoom}</div>
+                  </div>
+                )}
+                {course.teacher && (
+                  <div>
+                    <label className="text-xs text-slate-500">อาจารย์</label>
+                    <div className="font-medium">{course.teacher}</div>
+                  </div>
+                )}
                 <div>
-                  <label className="text-xs text-slate-500">ห้อง P</label>
-                  <div className="font-medium">{selectedCourse.pRoom}</div>
+                  <label className="text-xs text-slate-500">เวลาเรียน</label>
+                  <div className="font-medium">{course.startTime} - {course.endTime}</div>
                 </div>
-              )}
-              {selectedCourse.teacher && (
                 <div>
-                  <label className="text-xs text-slate-500">อาจารย์</label>
-                  <div className="font-medium">{selectedCourse.teacher}</div>
-                </div>
-              )}
-              <div>
-                <label className="text-xs text-slate-500">เวลาเรียน</label>
-                <div className="font-medium">{selectedCourse.startTime} - {selectedCourse.endTime}</div>
-              </div>
-              <div>
-                <label className="text-xs text-slate-500">เงื่อนไขการเรียน</label>
-                <div className="font-medium">
-                  {selectedCourse.scheduleType === 'odd-onsite' && 'เข้าชั้นเรียนในสัปดาห์คี่ / ออนไลน์ในสัปดาห์คู่'}
-                  {selectedCourse.scheduleType === 'even-onsite' && 'เข้าชั้นเรียนในสัปดาห์คู่ / ออนไลน์ในสัปดาห์คี่'}
-                  {selectedCourse.scheduleType === 'online-always' && 'ออนไลน์ตลอด'}
-                  {selectedCourse.scheduleType === 'onsite-always' && 'เรียนที่มหาลัยตลอด'}
+                  <label className="text-xs text-slate-500">เงื่อนไขการเรียน</label>
+                  <div className="font-medium">
+                    {course.scheduleType === 'odd-onsite' && 'เข้าชั้นเรียนในสัปดาห์คี่ / ออนไลน์ในสัปดาห์คู่'}
+                    {course.scheduleType === 'even-onsite' && 'เข้าชั้นเรียนในสัปดาห์คู่ / ออนไลน์ในสัปดาห์คี่'}
+                    {course.scheduleType === 'online-always' && 'ออนไลน์ตลอด'}
+                    {course.scheduleType === 'onsite-always' && 'เรียนที่มหาลัยตลอด'}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="mt-6 flex justify-end">
-              <Button onClick={() => setSelectedCourse(null)}>ปิด</Button>
-            </div>
-          </Modal>
-        )}
+
+              {/* Weekly Override Section */}
+              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-xs text-slate-500">สถานะสำหรับสัปดาห์นี้</label>
+                    <div className="font-bold text-lg flex items-center gap-2">
+                       {isOverridden && <RefreshCw className="h-4 w-4 animate-spin text-indigo-500" />}
+                       {status === 'online' ? '🌐 ออนไลน์' : '🏫 ออนไซต์'}
+                    </div>
+                  </div>
+                  <Button onClick={() => handleOverride(course, date)}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    เปลี่ยนเป็น {nextStatus === 'online' ? '🌐 ออนไลน์' : '🏫 ออนไซต์'}
+                  </Button>
+                </div>
+                {isOverridden && (
+                  <p className="text-xs text-slate-500 mt-2">
+                    มีการเปลี่ยนแปลงสถานะสำหรับสัปดาห์นี้.
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <Button onClick={() => setSelectedCourse(null)}>ปิด</Button>
+              </div>
+            </Modal>
+          )
+        })()}
       </AnimatePresence>
     </div>
   );
