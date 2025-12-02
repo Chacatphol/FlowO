@@ -823,31 +823,19 @@ function ScheduleView({state, dispatch}) {
 
         {/* Date Navigator */}
         <div className="flex items-center justify-between">
-          <GhostButton onClick={() => setSelectedDate(addDays(selectedDate, -7))}>
-            <ChevronLeft className="h-4 w-4 mr-1"/> สัปดาห์ก่อน
+          <GhostButton onClick={() => setSelectedDate(subDays(selectedDate, 1))}>
+            <ChevronLeft className="h-4 w-4 mr-1"/> วันก่อนหน้า
           </GhostButton>
-          <div className="text-center flex-1">
-            {/* <div className="font-semibold text-lg mb-2">
-              สัปดาห์ที่ {format(selectedDate, 'd MMM', {locale: th})}
-            </div> */}
           <div className="text-center flex-1 px-2">
-            {(() => {
-              const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-              const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
-              const startFormat = isSameMonth(weekStart, weekEnd) ? 'd' : 'd MMM';
-              const endFormat = 'd MMM yyyy';
-              return (
-                <div className="font-semibold text-lg mb-2">
-                  {format(weekStart, startFormat, { locale: th })} - {format(weekEnd, endFormat, { locale: th })}
-                </div>
-              );
-            })()}
+            <div className="font-semibold text-lg mb-2">
+              {format(selectedDate, 'EEEE d MMMM', { locale: th })}
+            </div>
             <div className={`inline-block px-6 py-2 rounded-full font-bold text-lg ${weekTypeColor} animate-pulse`}>
               ✨ {weekTypeLabel} ✨
             </div>
           </div>
-          <GhostButton onClick={() => setSelectedDate(addDays(selectedDate, 7))}>
-            สัปดาห์หน้า <ChevronRight className="h-4 w-4 ml-1"/>
+          <GhostButton onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
+            วันถัดไป <ChevronRight className="h-4 w-4 ml-1"/>
           </GhostButton>
         </div>
       </Card>
