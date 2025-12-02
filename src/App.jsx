@@ -156,7 +156,7 @@ function usePersistentState(userId){
         }
 
       } else {
-        console.log("User document not found, will create a new one on first save.");
+        console.log("ไม่พบข้อมูลผู้ใช้ จะสร้างใหม่เมื่อมีการบันทึกครั้งแรก");
         dispatch({ type: 'reset' }); // Start with a clean slate
       }
     }, (error) => {
@@ -315,10 +315,10 @@ export default function App(){
   ).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)), [tasks]);
 
   const navItems = [
-    { key: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
-    { key: 'tasks', label: 'Tasks', icon: ListTodo },
+    { key: 'dashboard', label: 'แดชบอร์ด', icon: LayoutGrid },
+    { key: 'tasks', label: 'งานทั้งหมด', icon: ListTodo },
     { key: 'schedule', label: 'ตารางเรียน', icon: CalendarIcon },
-    { key: 'settings', label: 'ตั้งค่า', icon: Layers },
+    { key: 'settings', label: 'ตั้งค่า', icon: Layers }
   ];
 
   // schedule reminders for tasks when added/updated
@@ -691,7 +691,7 @@ function Dashboard({state, tasks, dueSoon, progressToday, lazyScore, setView, se
             if (item.type === 'workable') {
               return (
                 <div key="workable-day" className="mb-2 p-3 rounded-lg bg-slate-100/80 dark:bg-slate-800/80">
-                  <div className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">มีงานที่รอทำอยู่ ทำดีไหมน่าาา 😉</div>
+                  <div className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">มีงานที่รอทำอยู่ ทำดีไหมน้าา 😉</div>
                   {item.tasks.map(t => (
                     <div key={t.id} className="text-sm text-slate-500 dark:text-slate-400">
                       - {t.title} <span className="text-xs">({t.subjectName})</span>
@@ -1180,7 +1180,7 @@ function TasksView({state, dispatch, tasks, filteredTasks, setQuery, query, sele
           ))}
         </AnimatePresence>
         {filteredTasks.length === 0 && 
-          <div className="text-center text-slate-500 py-10">ไม่มีงานที่ตรงกับเงื่อนไข</div>
+          <div className="text-center text-slate-500 py-10">ไม่พบงานตามที่ค้นหา</div>
         }
       </div>
 
@@ -1993,7 +1993,7 @@ function TaskDetailView({ task, onUpdate, onClose, subjects }) {
     const payload = {...form, detail: form.detail || '', link: form.link || ''}
     onUpdate(payload)
     setEditing(false)
-  }
+  };
 
   if (isEditing) {
     return (
@@ -2007,9 +2007,8 @@ function TaskDetailView({ task, onUpdate, onClose, subjects }) {
         </div>
         <div className="mb-4">
           <label className="text-xs text-slate-500 mb-1 block">ประเภท</label>
-          <div className="flex gap-2">
-            <Button onClick={() => setForm({...form, taskType: 'deadline'})} className={`flex-1 ${form.taskType === 'deadline' ? '' : 'bg-slate-200 text-slate-800 hover:bg-slate-300'}`}>📝 งาน</Button>
-            <Button onClick={() => setForm({...form, taskType: 'event'})} className={`flex-1 ${form.taskType === 'event' ? '' : 'bg-slate-200 text-slate-800 hover:bg-slate-300'}`}>🗓️ นัดหมาย</Button>
+          <div className="flex gap-2"><GhostButton onClick={() => setForm({...form, taskType: 'deadline'})} className={`flex-1 ${form.taskType === 'deadline' ? 'bg-indigo-500 !text-white' : 'bg-white/40'}`}>📝 งาน</GhostButton>
+            <GhostButton onClick={() => setForm({...form, taskType: 'event'})} className={`flex-1 ${form.taskType === 'event' ? 'bg-indigo-500 !text-white' : 'bg-white/40'}`}>🗓️ นัดหมาย</GhostButton>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2174,7 +2173,7 @@ function LoginScreen() {
         <motion.div initial={{rotate:-8, scale:0.9}} animate={{rotate:0, scale:1}} className="inline-block h-20 w-20 mb-4 rounded-3xl bg-indigo-600 text-white items-center justify-center shadow-lg shadow-indigo-500/30">
           <Sparkles className="h-12 w-12 m-4" />
         </motion.div>
-        <h1 className="text-3xl font-bold font-display">ยินดีต้อนรับสู่ FlowO</h1>
+        <h1 className="text-3xl font-bold font-display">ยินดีต้อนรับสู่ FlowU</h1>
         <p className="text-slate-500 mt-2">จัดการตารางงานและชีวิตให้ง่ายขึ้น</p>
       </div>
       <Button onClick={handleSignIn} className="!px-6 !py-3 !text-base"><User className="h-5 w-5" /> เข้าสู่ระบบด้วย Google</Button>
