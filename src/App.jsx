@@ -3,7 +3,7 @@ import { format, isToday, isPast, addMinutes, addHours, addDays, differenceInMin
 import { createPortal } from "react-dom";
 import { th } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Share2 } from "recharts";
 import { Plus, Calendar as CalendarIcon, Bell, Trash2, Pencil, Check, CheckCircle, TimerReset, Upload, Download, ChevronLeft, ChevronRight, Link as LinkIcon, ListTodo, Sparkles, Folder, LayoutGrid, Layers, RefreshCw, Sun, Moon, BarChart3, LogOut, User, Flame, TrendingUp, Search, Filter, Menu, Circle, Minus, Flag, Clock, Archive, X } from "lucide-react";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
@@ -816,6 +816,17 @@ function ScheduleView({state, dispatch}) {
   return (
     <div className="space-y-6">
       {/* Header */}
+      <div className="flex items-center justify-between">
+        <SectionTitle><CalendarIcon className="h-5 w-5"/> ตารางเรียน</SectionTitle>
+        <Button onClick={() => {
+          const shareUrl = `${window.location.origin}/share/${state.userId}`;
+          navigator.clipboard.writeText(shareUrl);
+          alert(`คัดลอกลิงก์สำหรับแชร์แล้ว!\n${shareUrl}`);
+        }}>
+          <LinkIcon className="h-4 w-4 mr-2" />
+          แชร์ตารางเรียน
+        </Button>
+      </div>
       <Card>
         <div className="flex items-center justify-between mb-4">
           <SectionTitle><CalendarIcon className="h-5 w-5"/> ตารางเรียน</SectionTitle>
