@@ -978,7 +978,7 @@ function ScheduleView({state, dispatch, userId}) {
         ) : (
           <div className="text-center text-slate-500 py-10 flex flex-col items-center gap-2">
             {icons.celebration}
-            <span>ไม่มีวิชาเรียนในวันนี้</span>
+            <span>ไม่มีเรียนในวันนี้</span>
           </div>
         )}
       </Card>
