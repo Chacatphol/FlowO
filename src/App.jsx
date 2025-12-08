@@ -128,10 +128,41 @@ const getCoursesForDay = (courses, date) => {
     .filter(c => c.dayOfWeek === dayOfWeek)
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 };
+
+// ฟังก์ชันทำความสะอาด scheduleOverrides ที่หมดอายุ (เกิน 5 วันจากสัปดาห์ที่ตั้งค่า)
+const cleanExpiredOverrides = (scheduleOverrides) => {
+  const now = new Date();
+  const cleanedOverrides = {};
+  
+  Object.entries(scheduleOverrides || {}).forEach(([key, status]) => {
+    // key format: courseId_weekStartDate (e.g., "abc123_2025-12-08")
+    const weekStartDateString = key.split('_')[1];
+    if (!weekStartDateString) {
+      // ถ้า format ไม่ถูกต้อง ให้เก็บไว้
+      cleanedOverrides[key] = status;
+      return;
+    }
+    
+    const weekStartDate = new Date(weekStartDateString);
+    const weekEndDate = addDays(weekStartDate, 4); // วันศุกร์ของสัปดาห์นั้น
+    const expiryDate = addDays(weekEndDate, 5); // หมดอายุหลังจากผ่านไป 5 วันจากวันศุกร์
+    
+    // ถ้ายังไม่หมดอายุ ให้เก็บไว้
+    if (now < expiryDate) {
+      cleanedOverrides[key] = status;
+    } else {
+      console.log(`🗑️ ลบ override ที่หมดอายุ: ${key} (หมดอายุเมื่อ ${format(expiryDate, 'yyyy-MM-dd')})`);
+    }
+  });
+  
+  return cleanedOverrides;
+};
+
 // --- Data layer (Firebase) with Auth ---
 function usePersistentState(userId){
   const [state, dispatch] = useReducer(reducer, initialState);
   const isInitialLoad = useRef(true);
+
 
   // Load data from Firestore when userId changes
   useEffect(() => {
@@ -147,6 +178,16 @@ function usePersistentState(userId){
       if (docSnap.exists()) {
         const data = docSnap.data();
         console.log("📥 โหลดข้อมูลจาก Firestore:", data);
+        
+        // ทำความสะอาด scheduleOverrides ที่หมดอายุ (เกิน 5 วันจากสัปดาห์ที่ตั้งค่า)
+        const cleanedOverrides = cleanExpiredOverrides(data.scheduleOverrides);
+        const hasExpiredOverrides = Object.keys(data.scheduleOverrides || {}).length !== Object.keys(cleanedOverrides).length;
+        
+        if (hasExpiredOverrides) {
+          console.log("🧹 พบ override ที่หมดอายุ กำลังทำความสะอาด...");
+          data.scheduleOverrides = cleanedOverrides;
+        }
+        
         dispatch({ type: 'load', payload: data });
 
         // Mark initial load as complete BEFORE any other dispatches
@@ -193,10 +234,13 @@ function usePersistentState(userId){
     console.log("💾 กำลังบันทึกข้อมูลลง Firestore...");
     console.log("🔄 scheduleOverrides:", state.scheduleOverrides);
     console.log("📦 จำนวน keys:", Object.keys(state.scheduleOverrides || {}).length);
+    console.log("📋 Full cleanState:", cleanState);
     const docRef = doc(db, "schedules", userId);
-    setDoc(docRef, cleanState, { merge: true })
+    // เปลี่ยนจาก merge: true เป็นการเขียนทับทั้งหมด เพื่อให้แน่ใจว่า scheduleOverrides จะถูกบันทึก
+    setDoc(docRef, cleanState)
       .then(() => {
         console.log("✅ บันทึกข้อมูลสำเร็จ!");
+        console.log("✅ scheduleOverrides ที่บันทึก:", cleanState.scheduleOverrides);
       }).catch(error => {
         console.error("❌ Error writing document: ", error);
         alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล โปรดตรวจสอบการเชื่อมต่ออินเทอร์เน็ตและลองอีกครั้ง");
