@@ -9,6 +9,7 @@ import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
 import { db, auth } from "./firebase"; // Import auth
 import { Button, GhostButton, Input, Textarea, Select, Card, SectionTitle, Badge, Progress } from './components/ui.jsx';
+import PublicScheduleView from './PublicScheduleView.jsx';
 import { DayPicker } from "react-day-picker";
 import 'react-day-picker/dist/style.css';
 import './day-picker.css';
@@ -265,6 +266,38 @@ export default function App(){
   const [deleteMode, setDeleteMode] = useState(false);
   const [selectedTasksForDeletion, setSelectedTasksForDeletion] = useState(new Set());
   const [nowTick, setNowTick] = useState(0)
+
+  // ========== ตรวจสอบว่าเป็นหน้า Public Share หรือไม่ ==========
+  const [isPublicView, setIsPublicView] = useState(false);
+  const [sharedUserId, setSharedUserId] = useState(null);
+  const [sharedUserData, setSharedUserData] = useState(null);
+
+  useEffect(() => {
+    // ตรวจสอบ URL parameter (เช่น ?share=USER_ID)
+    const urlParams = new URLSearchParams(window.location.search);
+    const shareParam = urlParams.get('share');
+    
+    if (shareParam) {
+      setIsPublicView(true);
+      setSharedUserId(shareParam);
+      console.log('📤 โหมดแชร์ตารางเรียน - User ID:', shareParam);
+      
+      // โหลดข้อมูลจาก Firestore
+      const docRef = doc(db, "schedules", shareParam);
+      const unsubscribe = onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          console.log('📥 โหลดข้อมูลตารางเรียนที่แชร์:', data);
+          setSharedUserData(data);
+        } else {
+          console.log('⚠️ ไม่พบข้อมูลตารางเรียน');
+          setSharedUserData(null);
+        }
+      });
+      
+      return () => unsubscribe();
+    }
+  }, []);
 
   // Listen to auth state changes
   useEffect(() => {
