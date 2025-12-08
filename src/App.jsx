@@ -3,7 +3,7 @@ import { format, isToday, isPast, addMinutes, addHours, addDays, differenceInMin
 import { createPortal } from "react-dom";
 import { th } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Share2 } from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from "recharts";
 import { Plus, Calendar as CalendarIcon, Bell, Trash2, Pencil, Check, CheckCircle, TimerReset, Upload, Download, ChevronLeft, ChevronRight, Link as LinkIcon, ListTodo, Sparkles, Folder, LayoutGrid, Layers, RefreshCw, Sun, Moon, BarChart3, LogOut, User, Flame, TrendingUp, Search, Filter, Menu, Circle, Minus, Flag, Clock, Archive, X } from "lucide-react";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
@@ -79,16 +79,16 @@ const hexToRgba = (hex, alpha = 1) => {
 };
 
 // Calculate odd/even week (สัปดาห์คู่/คี่)
-// Week starts on Sunday and ends on Saturday (7 days per week).
-// Week of Nov 30, 2025 (Sunday) is week 1 (odd).
+// Week starts on Monday and ends on Friday (5 days per week).
+// Week of Dec 2, 2025 (Monday) is week 1 (odd).
 const getWeekType = (date) => {
-  const referenceDate = new Date('2025-11-30'); // Sunday, Nov 30, 2025 - Week 1 (odd)
+  const referenceDate = new Date('2025-12-02'); // Monday, Dec 2, 2025 - Week 1 (odd)
   
-  // Get the start of the week (Sunday) for both dates
-  const weekStartOfDate = startOfWeek(date, { weekStartsOn: 0 }); // 0 = Sunday
-  const weekStartOfReference = startOfWeek(referenceDate, { weekStartsOn: 0 });
+  // Get the start of the week (Monday) for both dates
+  const weekStartOfDate = startOfWeek(date, { weekStartsOn: 1 }); // 1 = Monday
+  const weekStartOfReference = startOfWeek(referenceDate, { weekStartsOn: 1 });
   
-  // Calculate the number of weeks between the two Sunday dates
+  // Calculate the number of weeks between the two Monday dates
   const weeksDiff = Math.floor(differenceInDays(weekStartOfDate, weekStartOfReference) / 7);
   
   // Week 0 (reference week) is odd, week 1 is even, week 2 is odd, etc.
@@ -97,7 +97,7 @@ const getWeekType = (date) => {
 
 // Get course status (online/onsite) based on schedule type and current week, with overrides
 const getCourseStatus = (course, date, scheduleOverrides = {}) => {
-  const weekStartDate = startOfWeek(date, { weekStartsOn: 0 });
+  const weekStartDate = startOfWeek(date, { weekStartsOn: 1 }); // เริ่มนับจากวันจันทร์
   const weekStartDateString = format(weekStartDate, 'yyyy-MM-dd');
   const overrideKey = `${course.id}_${weekStartDateString}`;
 
@@ -145,7 +145,11 @@ function usePersistentState(userId){
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
+        console.log("📥 โหลดข้อมูลจาก Firestore:", data);
         dispatch({ type: 'load', payload: data });
+
+        // Mark initial load as complete BEFORE any other dispatches
+        isInitialLoad.current = false;
 
         // Check and update login streak
         const today = format(new Date(), 'yyyy-MM-dd');
@@ -154,16 +158,18 @@ function usePersistentState(userId){
         if (lastLoginDate !== today) {
             const yesterday = format(addDays(new Date(), -1), 'yyyy-MM-dd');
             const newStreak = lastLoginDate === yesterday ? (data.loginStreak || 0) + 1 : 1;
+            console.log("🔥 อัปเดต login streak:", newStreak);
             dispatch({ type: 'updateLoginStreak', payload: { lastLogin: new Date().toISOString(), loginStreak: newStreak } });
         }
 
       } else {
-        console.log("ไม่พบข้อมูลผู้ใช้ จะสร้างใหม่เมื่อมีการบันทึกครั้งแรก");
+        console.log("⚠️ ไม่พบข้อมูลผู้ใช้ จะสร้างใหม่เมื่อมีการบันทึกครั้งแรก");
         dispatch({ type: 'reset' }); // Start with a clean slate
+        isInitialLoad.current = false; // Allow saving for new users
       }
-      isInitialLoad.current = false; // Initial load is complete, whether data existed or not.
     }, (error) => {
-      console.error("Error listening to document:", error);
+      console.error("❌ Error listening to document:", error);
+      isInitialLoad.current = false; // Allow retry
     });
 
     // Cleanup function when component unmounts or userId changes
@@ -174,14 +180,22 @@ function usePersistentState(userId){
   useEffect(() => {
     // Prevent writing during initial load or if user is not logged in
     if (!userId || isInitialLoad.current) {
+      console.log("⏸️ ข้ามการบันทึก (userId:", userId, "isInitialLoad:", isInitialLoad.current, ")");
       return;
     }
+    
+    // Remove undefined values from state (Firestore doesn't accept undefined)
+    const cleanState = JSON.parse(JSON.stringify(state, (key, value) => {
+      return value === undefined ? null : value;
+    }));
+    
+    console.log("💾 กำลังบันทึกข้อมูลลง Firestore...", cleanState);
     const docRef = doc(db, "schedules", userId);
-    setDoc(docRef, state, { merge: true })
+    setDoc(docRef, cleanState, { merge: true })
       .then(() => {
-        // Optional: console.log("Document successfully written!");
+        console.log("✅ บันทึกข้อมูลสำเร็จ!");
       }).catch(error => {
-        console.error("Error writing document: ", error);
+        console.error("❌ Error writing document: ", error);
         alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล โปรดตรวจสอบการเชื่อมต่ออินเทอร์เน็ตและลองอีกครั้ง");
       });
   }, [state, userId]);
@@ -382,7 +396,7 @@ export default function App(){
             <motion.div key={view} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.12 }}>
               {view === 'dashboard' && <Dashboard state={state} tasks={tasks} dueSoon={dueSoon} progressToday={progressToday} lazyScore={lazyScore} setView={setView} setSelectedSubject={setSelectedSubject} />}
               {view === 'tasks' && <TasksView state={state} dispatch={dispatch} tasks={tasks} filteredTasks={filteredTasks} setQuery={setQuery} query={query} selectedSubject={selectedSubject} setSelectedSubject={setSelectedSubject} deleteMode={deleteMode} selectedTasksForDeletion={selectedTasksForDeletion} setSelectedTasksForDeletion={setSelectedTasksForDeletion} />}
-              {view === 'schedule' && <ScheduleView state={state} dispatch={dispatch} />}
+              {view === 'schedule' && <ScheduleView state={state} dispatch={dispatch} userId={user?.uid} />}
               {view === 'settings' && <Settings state={state} dispatch={dispatch} userId={user?.uid} onLogout={handleLogout} setView={setView} />}
               {view === 'history' && <HistoryView tasks={archivedTasks} dispatch={dispatch} />}
             </motion.div>
@@ -759,7 +773,7 @@ function Dashboard({state, tasks, dueSoon, progressToday, lazyScore, setView, se
   );
 }
 
-function ScheduleView({state, dispatch}) {
+function ScheduleView({state, dispatch, userId}) {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedCourse, setSelectedCourse] = useState(null); // Will now be { course, date }
 
@@ -774,11 +788,11 @@ function ScheduleView({state, dispatch}) {
   }, [state.courses, selectedDate]);
 
   const weekDays = useMemo(() => {
-    // Get the start of the week (Sunday) for the selected date
-    const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 }); // 0 = Sunday
-    const weekEnd = addDays(weekStart, 6); // Saturday
+    // Get the start of the week (Monday) for the selected date
+    const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 }); // 1 = Monday
+    const weekEnd = addDays(weekStart, 4); // Friday (จันทร์ + 4 วัน = ศุกร์)
     
-    // Get all 7 days from Sunday to Saturday
+    // Get only 5 days from Monday to Friday
     return eachDayOfInterval({ start: weekStart, end: weekEnd });
   }, [selectedDate]);
 
@@ -802,7 +816,7 @@ function ScheduleView({state, dispatch}) {
 
   const handleOverride = (course, date) => {
     const { status } = getCourseStatus(course, date, state.scheduleOverrides);
-    const weekStartDate = startOfWeek(date, { weekStartsOn: 0 });
+    const weekStartDate = startOfWeek(date, { weekStartsOn: 1 }); // เริ่มนับจากวันจันทร์
     const weekStartDateString = format(weekStartDate, 'yyyy-MM-dd');
     const overrideKey = `${course.id}_${weekStartDateString}`;
     
@@ -819,25 +833,36 @@ function ScheduleView({state, dispatch}) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <SectionTitle><CalendarIcon className="h-5 w-5"/> ตารางเรียน</SectionTitle>
-        <Button onClick={() => {
-          const shareUrl = `${window.location.origin}/share/${state.userId}`;
-          navigator.clipboard.writeText(shareUrl);
-          alert(`คัดลอกลิงก์สำหรับแชร์แล้ว!\n${shareUrl}`);
-        }}>
-          <LinkIcon className="h-4 w-4 mr-2" />
-          แชร์ตารางเรียน
-        </Button>
-      </div>
       <Card>
         <div className="flex items-center justify-between mb-4">
           <SectionTitle><CalendarIcon className="h-5 w-5"/> ตารางเรียน</SectionTitle>
+          <Button onClick={() => {
+            if (!userId) {
+              alert('ไม่สามารถแชร์ได้ กรุณาเข้าสู่ระบบก่อน');
+              return;
+            }
+            const shareUrl = `${window.location.origin}/share/${userId}`;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+              alert(`คัดลอกลิงก์สำหรับแชร์แล้ว!\n${shareUrl}`);
+            }).catch(() => {
+              alert('ไม่สามารถคัดลอกลิงก์ได้');
+            });
+          }}>
+            <LinkIcon className="h-4 w-4 mr-2" />
+            แชร์ตารางเรียน
+          </Button>
         </div>
 
         {/* Date Navigator */}
         <div className="flex items-center justify-between">
-          <GhostButton onClick={() => setSelectedDate(subDays(selectedDate, 1))}>
+          <GhostButton onClick={() => {
+            let newDate = subDays(selectedDate, 1);
+            // ถ้าเป็นวันอาทิตย์ (0) ให้ข้ามไปวันศุกร์
+            if (newDate.getDay() === 0) newDate = subDays(newDate, 2);
+            // ถ้าเป็นวันเสาร์ (6) ให้ข้ามไปวันศุกร์
+            if (newDate.getDay() === 6) newDate = subDays(newDate, 1);
+            setSelectedDate(newDate);
+          }}>
             <ChevronLeft className="h-4 w-4 mr-1"/> วันก่อนหน้า
           </GhostButton>
           <div className="text-center flex-1 px-2">
@@ -848,7 +873,14 @@ function ScheduleView({state, dispatch}) {
               ✨ {weekTypeLabel} ✨
             </div>
           </div>
-          <GhostButton onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
+          <GhostButton onClick={() => {
+            let newDate = addDays(selectedDate, 1);
+            // ถ้าเป็นวันเสาร์ (6) ให้ข้ามไปวันจันทร์
+            if (newDate.getDay() === 6) newDate = addDays(newDate, 2);
+            // ถ้าเป็นวันอาทิตย์ (0) ให้ข้ามไปวันจันทร์
+            if (newDate.getDay() === 0) newDate = addDays(newDate, 1);
+            setSelectedDate(newDate);
+          }}>
             วันถัดไป <ChevronRight className="h-4 w-4 ml-1"/>
           </GhostButton>
         </div>
@@ -916,7 +948,7 @@ function ScheduleView({state, dispatch}) {
       <Card>
         <div className="flex items-center justify-between mb-2">
           <SectionTitle>ตารางเรียนรายสัปดาห์ (ภาพรวม)</SectionTitle>
-          <div className="text-xs text-slate-500">💡 คลิกที่วิชาเพื่อแก้ไขสถานะชั่วคราว</div>
+          <div className="text-xs text-slate-500">💡 คลิกที่วิชาเพื่อแก้ไข รูปแบบที่เรียนชั่วคราว</div>
         </div>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full border-collapse">
@@ -964,18 +996,15 @@ function ScheduleView({state, dispatch}) {
                           <td 
                             key={dayKey} 
                             rowSpan={rowspan}
-                            className="border border-slate-200 dark:border-slate-700 p-0 align-top"
+                            onClick={() => setSelectedCourse({ course: courseAtTime, date: day })}
+                            className="border border-slate-200 dark:border-slate-700 p-0 align-top cursor-pointer hover:shadow-lg hover:brightness-95 transition-all duration-200 group"
                             style={{ backgroundColor: hexToRgba(courseAtTime.color, 0.15) }}
+                            title="คลิกเพื่อดูรายละเอียดและแก้ไขสถานะ"
                           >
-                            <div 
-                              className="cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all duration-200 h-full flex flex-col group"
-                              onClick={() => setSelectedCourse({ course: courseAtTime, date: day })}
-                              title="คลิกเพื่อดูรายละเอียดและแก้ไขสถานะ"
-                            >
+                            <div className="h-full flex flex-col">
                               {/* Status Bar */}
                               <div 
                                 className={`${statusBgColor} text-white px-2 py-1 text-[10px] font-bold flex items-center justify-center gap-1`}
-                                title="คลิกเพื่อดูรายละเอียดและแก้ไข"
                               >
                                 {isOverridden && <RefreshCw className="h-3 w-3 animate-spin" />}
                                 <span>{statusIcon}</span>
@@ -1739,7 +1768,7 @@ function Settings({state, dispatch, userId, onLogout, setView}){
   const addSubject = ()=>{
     const name = nameRef.current.value.trim();
     if(!name) return;
-    dispatch({type:'addSubject', payload:{id:uid(), name, color: colorRef.current.value}});
+    dispatch({type:'addSubject', payload:{id:uid(), name, color: colorRef.current.value || '#6366f1'}});
     nameRef.current.value = '';
     setAddingSubject(false);
   };
@@ -1752,7 +1781,7 @@ function Settings({state, dispatch, userId, onLogout, setView}){
     if (!editingSubject) return;
     const name = editNameRef.current.value.trim();
     if (name) {
-      dispatch({ type: 'updateSubject', payload: { ...editingSubject, name, color: editColorRef.current.value } });
+      dispatch({ type: 'updateSubject', payload: { ...editingSubject, name, color: editColorRef.current.value || '#6366f1' } });
     }
     setEditingSubject(null);
   };
@@ -2187,7 +2216,7 @@ function LoginScreen() {
         <motion.div initial={{rotate:-8, scale:0.9}} animate={{rotate:0, scale:1}} className="inline-block h-20 w-20 mb-4 rounded-3xl bg-indigo-600 text-white items-center justify-center shadow-lg shadow-indigo-500/30">
           <Sparkles className="h-12 w-12 m-4" />
         </motion.div>
-        <h1 className="text-3xl font-bold font-display">ยินดีต้อนรับสู่ FlowU</h1>
+        <h1 className="text-3xl font-bold font-display">ยินดีต้อนรับสู่ FlowO</h1>
         <p className="text-slate-500 mt-2">จัดการตารางงานและชีวิตให้ง่ายขึ้น</p>
       </div>
       <Button onClick={handleSignIn} className="!px-6 !py-3 !text-base"><User className="h-5 w-5" /> เข้าสู่ระบบด้วย Google</Button>
