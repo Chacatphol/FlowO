@@ -130,6 +130,7 @@ const getCoursesForDay = (courses, date) => {
 // --- Data layer (Firebase) with Auth ---
 function usePersistentState(userId){
   const [state, dispatch] = useReducer(reducer, initialState);
+  const isInitialLoad = useRef(true);
 
   // Load data from Firestore when userId changes
   useEffect(() => {
@@ -137,6 +138,7 @@ function usePersistentState(userId){
       dispatch({ type: 'reset' }); // Reset state if no user is logged in
       return;
     }
+    isInitialLoad.current = true; // Set flag on user change
     const docRef = doc(db, "schedules", userId);
 
     // Use onSnapshot for real-time updates
@@ -159,6 +161,7 @@ function usePersistentState(userId){
         console.log("ไม่พบข้อมูลผู้ใช้ จะสร้างใหม่เมื่อมีการบันทึกครั้งแรก");
         dispatch({ type: 'reset' }); // Start with a clean slate
       }
+      isInitialLoad.current = false; // Initial load is complete, whether data existed or not.
     }, (error) => {
       console.error("Error listening to document:", error);
     });
@@ -169,8 +172,8 @@ function usePersistentState(userId){
 
   // Save data to Firestore whenever state changes
   useEffect(() => {
-    // Prevent writing initial empty state or if user is not logged in
-    if (!userId || state === initialState) {
+    // Prevent writing during initial load or if user is not logged in
+    if (!userId || isInitialLoad.current) {
       return;
     }
     const docRef = doc(db, "schedules", userId);
