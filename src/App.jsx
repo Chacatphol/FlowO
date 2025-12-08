@@ -190,7 +190,9 @@ function usePersistentState(userId){
       return value === undefined ? null : value;
     }));
     
-    console.log("💾 กำลังบันทึกข้อมูลลง Firestore...", cleanState);
+    console.log("💾 กำลังบันทึกข้อมูลลง Firestore...");
+    console.log("🔄 scheduleOverrides:", state.scheduleOverrides);
+    console.log("📦 จำนวน keys:", Object.keys(state.scheduleOverrides || {}).length);
     const docRef = doc(db, "schedules", userId);
     setDoc(docRef, cleanState, { merge: true })
       .then(() => {
