@@ -9,7 +9,7 @@ import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
 import { db, auth } from "./firebase"; // Import auth
 import { Button, GhostButton, Input, Textarea, Select, Card, SectionTitle, Badge, Progress } from './components/ui.jsx';
-import PublicScheduleView from './PublicScheduleView.jsx';
+import { icons } from './components/icons.jsx';
 import { DayPicker } from "react-day-picker";
 import 'react-day-picker/dist/style.css';
 import './day-picker.css';
@@ -205,7 +205,7 @@ function usePersistentState(userId){
         }
 
       } else {
-        console.log("⚠️ ไม่พบข้อมูลผู้ใช้ จะสร้างใหม่เมื่อมีการบันทึกครั้งแรก");
+        console.log("⚠ ไม่พบข้อมูลผู้ใช้ จะสร้างใหม่เมื่อมีการบันทึกครั้งแรก");
         dispatch({ type: 'reset' }); // Start with a clean slate
         isInitialLoad.current = false; // Allow saving for new users
       }
@@ -312,38 +312,6 @@ export default function App(){
   const [deleteMode, setDeleteMode] = useState(false);
   const [selectedTasksForDeletion, setSelectedTasksForDeletion] = useState(new Set());
   const [nowTick, setNowTick] = useState(0)
-
-  // ========== ตรวจสอบว่าเป็นหน้า Public Share หรือไม่ ==========
-  const [isPublicView, setIsPublicView] = useState(false);
-  const [sharedUserId, setSharedUserId] = useState(null);
-  const [sharedUserData, setSharedUserData] = useState(null);
-
-  useEffect(() => {
-    // ตรวจสอบ URL parameter (เช่น ?share=USER_ID)
-    const urlParams = new URLSearchParams(window.location.search);
-    const shareParam = urlParams.get('share');
-    
-    if (shareParam) {
-      setIsPublicView(true);
-      setSharedUserId(shareParam);
-      console.log('📤 โหมดแชร์ตารางเรียน - User ID:', shareParam);
-      
-      // โหลดข้อมูลจาก Firestore
-      const docRef = doc(db, "schedules", shareParam);
-      const unsubscribe = onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          console.log('📥 โหลดข้อมูลตารางเรียนที่แชร์:', data);
-          setSharedUserData(data);
-        } else {
-          console.log('⚠️ ไม่พบข้อมูลตารางเรียน');
-          setSharedUserData(null);
-        }
-      });
-      
-      return () => unsubscribe();
-    }
-  }, []);
 
   // Listen to auth state changes
   useEffect(() => {
@@ -787,7 +755,7 @@ function Dashboard({state, tasks, dueSoon, progressToday, lazyScore, setView, se
             if (item.type === 'workable') {
               return (
                 <div key="workable-day" className="mb-2 p-3 rounded-lg bg-slate-100/80 dark:bg-slate-800/80">
-                  <div className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">มีงานที่รอทำอยู่ ทำดีไหมน้าา 😉</div>
+                  <div className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2 flex items-center gap-2">มีงานที่รอทำอยู่ ทำดีไหมน้าา {icons.smile}</div>
                   {item.tasks.map(t => (
                     <div key={t.id} className="text-sm text-slate-500 dark:text-slate-400">
                       - {t.title} <span className="text-xs">({t.subjectName})</span>
@@ -913,27 +881,12 @@ function ScheduleView({state, dispatch, userId}) {
     <div className="space-y-6">
       {/* Header */}
       <Card>
-        <div className="flex items-center justify-between mb-4">
-          <SectionTitle><CalendarIcon className="h-5 w-5"/> ตารางเรียน</SectionTitle>
-          <Button onClick={() => {
-            if (!userId) {
-              alert('ไม่สามารถแชร์ได้ กรุณาเข้าสู่ระบบก่อน');
-              return;
-            }
-            const shareUrl = `${window.location.origin}/share/${userId}`;
-            navigator.clipboard.writeText(shareUrl).then(() => {
-              alert(`คัดลอกลิงก์สำหรับแชร์แล้ว!\n${shareUrl}`);
-            }).catch(() => {
-              alert('ไม่สามารถคัดลอกลิงก์ได้');
-            });
-          }}>
-            <LinkIcon className="h-4 w-4 mr-2" />
-            แชร์ตารางเรียน
-          </Button>
+        <div className="flex items-center justify-between mb-2">
+          <SectionTitle><CalendarIcon className="h-4 w-4"/> ตารางเรียน</SectionTitle>
         </div>
 
         {/* Date Navigator */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between ">
           <GhostButton onClick={() => {
             let newDate = subDays(selectedDate, 1);
             // ถ้าเป็นวันอาทิตย์ (0) ให้ข้ามไปวันศุกร์
@@ -942,14 +895,15 @@ function ScheduleView({state, dispatch, userId}) {
             if (newDate.getDay() === 6) newDate = subDays(newDate, 1);
             setSelectedDate(newDate);
           }}>
-            <ChevronLeft className="h-4 w-4 mr-1"/> วันก่อนหน้า
+            <span className="hidden sm:inline text-base font-medium">ก่อนหน้า</span>
+            <ChevronLeft className="h-4 w-4 mr-0.5"/>
           </GhostButton>
-          <div className="text-center flex-1 px-2">
+          <div className="text-center flex-1 px-2 whitespace-nowrap">
             <div className="font-semibold text-lg mb-2">
               {format(selectedDate, 'EEEE d MMMM', { locale: th })}
             </div>
-            <div className={`inline-block px-6 py-2 rounded-full font-bold text-lg ${weekTypeColor} animate-pulse`}>
-              ✨ {weekTypeLabel} ✨
+            <div className={`inline-block px-12 py-2 rounded-full font-bold text-lg ${weekTypeColor}`}>
+              {weekTypeLabel}
             </div>
           </div>
           <GhostButton onClick={() => {
@@ -960,7 +914,8 @@ function ScheduleView({state, dispatch, userId}) {
             if (newDate.getDay() === 0) newDate = addDays(newDate, 1);
             setSelectedDate(newDate);
           }}>
-            วันถัดไป <ChevronRight className="h-4 w-4 ml-1"/>
+            <span className="hidden sm:inline text-base font-medium">ถัดไป</span>
+            <ChevronRight className="h-5 w-5" />
           </GhostButton>
         </div>
       </Card>
@@ -977,7 +932,11 @@ function ScheduleView({state, dispatch, userId}) {
                 : status === 'onsite'
                 ? 'bg-green-500'
                 : 'bg-slate-500';
-              const statusLabel = status === 'online' ? '🌐 ออนไลน์' : status === 'onsite' ? '🏫 ออนไซต์' : '❓ ไม่ทราบ';
+              const statusLabel = status === 'online'
+                ? <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm leading-none">globe</span> <span className="leading-none">ออนไลน์</span></span>
+                : status === 'onsite'
+                ? <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm leading-none">school</span> <span className="leading-none">ออนไซต์</span></span>
+                : <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm leading-none">question_mark</span> <span className="leading-none">ไม่ทราบ</span></span>;
 
               return (
                 <div 
@@ -990,7 +949,7 @@ function ScheduleView({state, dispatch, userId}) {
                   <div className={`${statusBgColor} text-white px-4 py-2 font-bold text-sm flex items-center justify-between`}>
                     <div className="flex items-center gap-2">
                       {isOverridden && <RefreshCw className="h-4 w-4 animate-spin" />}
-                      <span>{statusLabel}</span>
+                      {statusLabel}
                     </div>
                     <span className="text-xs opacity-90">
                       <Clock className="h-3 w-3 inline mr-1"/>
@@ -1004,10 +963,10 @@ function ScheduleView({state, dispatch, userId}) {
                       <div className="flex-1">
                         <div className="font-semibold text-lg mb-2">{course.name}</div>
                         <div className="text-sm text-slate-600 dark:text-slate-300 space-y-1">
-                          <div>📚 รหัสวิชา: {course.code}</div>
-                          {course.room && <div>🚪 ห้องเรียน: {course.room}</div>}
-                          {course.pRoom && <div>📍 ห้อง P: {course.pRoom}</div>}
-                          {course.teacher && <div>👨‍🏫 อาจารย์: {course.teacher}</div>}
+                          <div className="flex items-center gap-2">{icons.book} รหัสวิชา: {course.code}</div>
+                          {course.room && <div className="flex items-center gap-2">{icons.door} ห้องเรียน: {course.room}</div>}
+                          {course.pRoom && <div className="flex items-center gap-2">{icons.location} ห้อง P: {course.pRoom}</div>}
+                          {course.teacher && <div className="flex items-center gap-2">{icons.teacher} อาจารย์: {course.teacher}</div>}
                         </div>
                       </div>
                     </div>
@@ -1017,25 +976,30 @@ function ScheduleView({state, dispatch, userId}) {
             })}
           </div>
         ) : (
-          <div className="text-center text-slate-500 py-10">
-            ไม่มีวิชาเรียนในวันนี้ 🎉
+          <div className="text-center text-slate-500 py-10 flex flex-col items-center gap-2">
+            {icons.celebration}
+            <span>ไม่มีวิชาเรียนในวันนี้</span>
           </div>
         )}
       </Card>
 
       {/* Weekly Overview */}
       <Card>
-        <div className="flex items-center justify-between mb-2">
-          <SectionTitle>ตารางเรียนรายสัปดาห์ (ภาพรวม)</SectionTitle>
-          <div className="text-xs text-slate-500">💡 คลิกที่วิชาเพื่อแก้ไข รูปแบบที่เรียนชั่วคราว</div>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex flex-col">
+            <SectionTitle>ตารางเรียน</SectionTitle>
+            <div className="text-xs text-slate-500 flex items-center gap-1">
+              {icons.lightbulb} คลิกที่วิชาเพื่อแก้ไข รูปแบบที่เรียนชั่วคราว
+            </div>
+          </div>
         </div>
-        <div className="mt-4 overflow-x-auto">
+        <div className="-mx-4 mt-5 overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
               <tr>
                 <th className="border border-slate-200 dark:border-slate-700 p-2 bg-slate-50 dark:bg-slate-800 text-sm font-semibold sticky left-0 z-10">เวลา</th>
                 {weekDays.map(day => (
-                  <th key={format(day, 'yyyy-MM-dd')} className="border border-slate-200 dark:border-slate-700 p-2 bg-slate-50 dark:bg-slate-800 text-sm font-semibold min-w-[140px]">
+                  <th key={format(day, 'yyyy-MM-dd')} className="border border-slate-200 dark:border-slate-700 p-2 bg-slate-50 dark:bg-slate-800 text-sm font-semibold min-w-[100px]">
                     {format(day, 'EEEE', {locale: th})}
                     <div className="text-xs font-normal text-slate-500">{format(day, 'd MMM', {locale: th})}</div>
                   </th>
@@ -1064,7 +1028,12 @@ function ScheduleView({state, dispatch, userId}) {
                         const rowspan = getTimeSlotRowspan(courseAtTime);
                         const { status, isOverridden } = getCourseStatus(courseAtTime, day, state.scheduleOverrides);
                         const statusBgColor = status === 'online' ? 'bg-blue-500' : status === 'onsite' ? 'bg-green-500' : 'bg-slate-500';
-                        const statusIcon = status === 'online' ? '🌐' : status === 'onsite' ? '🏫' : '❓';
+                        const statusIcon = status === 'online'
+  ? <span className="material-symbols-outlined text-[12px] leading-none">globe</span>
+  : status === 'onsite'
+  ? <span className="material-symbols-outlined text-[12px] leading-none">school</span>
+  : <span className="material-symbols-outlined text-[12px] leading-none">question_mark</span>;
+
                         const statusText = status === 'online' ? 'ออนไลน์' : status === 'onsite' ? 'ออนไซต์' : 'ไม่ทราบ';
                         
                         for (let i = 0; i < rowspan; i++) {
@@ -1086,8 +1055,10 @@ function ScheduleView({state, dispatch, userId}) {
                                 className={`${statusBgColor} text-white px-2 py-1 text-[10px] font-bold flex items-center justify-center gap-1`}
                               >
                                 {isOverridden && <RefreshCw className="h-3 w-3 animate-spin" />}
-                                <span>{statusIcon}</span>
-                                <span>{statusText}</span>
+                                <span className="flex items-center gap-1">
+                                  {statusIcon}
+                                  <span className="leading-none">{statusText}</span>
+                                </span>
                               </div>
                               
                               {/* Course Info */}
@@ -1165,33 +1136,35 @@ function ScheduleView({state, dispatch, userId}) {
               </div>
 
               {/* Weekly Override Section */}
-              <div className="mt-6 pt-4 border-t-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
-                <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">⚡ เปลี่ยนแปลงชั่วคราวสำหรับสัปดาห์นี้</div>
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex-1">
-                    <label className="text-xs text-slate-500">สถานะปัจจุบัน</label>
-                    <div className="font-bold text-xl flex items-center gap-2 mt-1">
-                       {isOverridden && <RefreshCw className="h-5 w-5 animate-spin text-indigo-500" />}
-                       {status === 'online' ? '🌐 ออนไลน์' : '🏫 ออนไซต์'}
+              <div className="mt-6 pt-4 border-t-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg ">
+                <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 flex justify-center items-center gap-2">{icons.bolt} เปลี่ยนแปลงชั่วคราว</div>
+                {/* แยกเป็น 2 ชั้น */}
+                <div className="flex flex-col gap-4">
+                  {/* ชั้นบน: สถานะปัจจุบัน */}
+                  <div>
+                    <div className="font-bold text-sm flex justify-center gap-2 mt-1">
+                      <label className="text-sm text-slate-500">สถานะปัจจุบัน</label>
+                      {isOverridden && <RefreshCw className="h-5 w-5 animate-spin text-indigo-500" />}
+                      {status === 'online'
+                        ? <><span className="material-symbols-outlined">globe</span> ออนไลน์</>
+                        : <><span className="material-symbols-outlined">school</span> ออนไซต์</>
+                      }
                     </div>
-                    {isOverridden && (
-                      <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1 font-medium">
-                        ✨ มีการเปลี่ยนแปลงพิเศษ
-                      </p>
-                    )}
-                  </div>
-                  <Button 
-                    onClick={() => handleOverride(course, date)}
-                    className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold px-6 py-3 shadow-lg"
-                  >
-                    <RefreshCw className="h-5 w-5 mr-2" />
-                    เปลี่ยนเป็น {nextStatus === 'online' ? '🌐 ออนไลน์' : '🏫 ออนไซต์'}
-                  </Button>
-                </div>
-              </div>
 
-              <div className="mt-6 flex justify-end">
-                <Button onClick={() => setSelectedCourse(null)}>ปิด</Button>
+                  </div>
+                  <div className="flex justify-center">
+                    <Button 
+                      onClick={() => handleOverride(course, date)}
+                      className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold px-5 py-2 shadow-lg"
+                    >
+                      <RefreshCw className="h-5 w-5 mr-2" />
+                      เปลี่ยนเป็น {nextStatus === 'online'
+                        ? <><span className="material-symbols-outlined">globe</span> ออนไลน์</>
+                        : <><span className="material-symbols-outlined">school</span> ออนไซต์</>
+                      }
+                    </Button>
+                  </div>
+                </div>
               </div>
             </Modal>
           )
@@ -1381,8 +1354,8 @@ function AddTaskButton({subjects, onAdd}){
             <div className="px-2 mb-4">
               <label className="text-xs text-slate-500 mb-1 block">ประเภท</label>
               <div className="flex gap-2">
-                <GhostButton onClick={() => setForm({...form, taskType: 'deadline'})} className={`flex-1 ${form.taskType === 'deadline' ? 'bg-indigo-500 !text-white' : 'bg-white/40'}`}>📝 งาน</GhostButton>
-                <GhostButton onClick={() => setForm({...form, taskType: 'event'})} className={`flex-1 ${form.taskType === 'event' ? 'bg-indigo-500 !text-white' : 'bg-white/40'}`}>🗓️ นัดหมาย</GhostButton>
+                <GhostButton onClick={() => setForm({...form, taskType: 'deadline'})} className={`flex-1 ${form.taskType === 'deadline' ? 'bg-indigo-500 !text-white' : 'bg-white/40'}`}><span className="flex items-center gap-2">{icons.task} งาน</span></GhostButton>
+                <GhostButton onClick={() => setForm({...form, taskType: 'event'})} className={`flex-1 ${form.taskType === 'event' ? 'bg-indigo-500 !text-white' : 'bg-white/40'}`}><span className="flex items-center gap-2">{icons.event} นัดหมาย</span></GhostButton>
               </div>
             </div>
 
@@ -2129,8 +2102,8 @@ function TaskDetailView({ task, onUpdate, onClose, subjects }) {
         </div>
         <div className="mb-4">
           <label className="text-xs text-slate-500 mb-1 block">ประเภท</label>
-          <div className="flex gap-2"><GhostButton onClick={() => setForm({...form, taskType: 'deadline'})} className={`flex-1 ${form.taskType === 'deadline' ? 'bg-indigo-500 !text-white' : 'bg-white/40'}`}>📝 งาน</GhostButton>
-            <GhostButton onClick={() => setForm({...form, taskType: 'event'})} className={`flex-1 ${form.taskType === 'event' ? 'bg-indigo-500 !text-white' : 'bg-white/40'}`}>🗓️ นัดหมาย</GhostButton>
+          <div className="flex gap-2"><GhostButton onClick={() => setForm({...form, taskType: 'deadline'})} className={`flex-1 ${form.taskType === 'deadline' ? 'bg-indigo-500 !text-white' : 'bg-white/40'}`}><span className="flex items-center gap-2">{icons.task} งาน</span></GhostButton>
+            <GhostButton onClick={() => setForm({...form, taskType: 'event'})} className={`flex-1 ${form.taskType === 'event' ? 'bg-indigo-500 !text-white' : 'bg-white/40'}`}><span className="flex items-center gap-2">{icons.event} นัดหมาย</span></GhostButton>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
