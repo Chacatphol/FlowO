@@ -3,7 +3,7 @@ import { th } from 'date-fns/locale';
 import { Badge, Progress } from './ui';
 
 const statusColors = {
-  todo: 'bg-slate-200 text-slate-500',
+  todo: 'bg-secondary-200 text-secondary-600',
   doing: 'bg-blue-200 text-blue-500',
   done: 'bg-green-200 text-green-500'
 };
@@ -16,23 +16,23 @@ const statusLabels = {
 
 export function TaskItem({ task, selected, onClick }) {
   const subject = task.subject;
-  const color = subject?.color || 'slate';
+  const color = subject?.color || 'secondary';
 
   return (
     <div 
       onClick={onClick}
       className={`
-        p-4 rounded-2xl bg-white dark:bg-slate-800 relative transition-all
-        ${selected ? 'ring-2 ring-offset-2 dark:ring-offset-slate-900' : ''}
+        p-4 rounded-2xl bg-white dark:bg-secondary-800 relative transition-all
+        ${selected ? 'ring-2 ring-offset-2 dark:ring-offset-secondary-900 ring-primary-500' : ''}
       `}
     >
       <div className="flex justify-between items-start">
-        <h3 className={`font-semibold text-lg text-${color}-500`}>{task.title}</h3>
+        <h3 className={`font-semibold text-lg ${color === 'secondary' ? 'text-white' : `text-${color}-500`}`}>{task.title}</h3>
         <Badge className={statusColors[task.status]}>
           {statusLabels[task.status]}
         </Badge>
       </div>
-      {task.detail && <p className="text-sm text-slate-500 mt-1">{task.detail}</p>}
+      {task.detail && <p className="text-sm text-secondary-300 mt-1">{task.detail}</p>}
       <div className="mt-4">
         <Progress 
           value={task.progress} 
@@ -43,13 +43,13 @@ export function TaskItem({ task, selected, onClick }) {
       <div className="flex gap-4 mt-4 text-xs">
         {task.dueAt && (
           <div>
-            <div className="text-slate-500 dark:text-slate-400">กำหนดส่ง</div>
+            <div className="text-secondary-500 dark:text-secondary-400">กำหนดส่ง</div>
             <div>{format(new Date(task.dueAt), 'PPP', { locale: th })}</div>
           </div>
         )}
         {task.duration && (
           <div>
-            <div className="text-slate-500 dark:text-slate-400">ระยะเวลา</div>
+            <div className="text-secondary-500 dark:text-secondary-400">ระยะเวลา</div>
             <div>{task.duration} นาที</div>
           </div>
         )}

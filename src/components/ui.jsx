@@ -5,13 +5,13 @@ import { Popover, Transition } from '@headlessui/react';
 import { format, setHours, setMinutes } from 'date-fns';
 import { th } from 'date-fns/locale';
 
-// Modern Smartify-like UI primitives (mobile-first, glass accents, indigo accent)
+// Modern Smartify-like UI primitives (mobile-first, glass accents, lime green accent)
 export const Button = ({ as: Comp = 'button', className = '', children, ...props }) => (
   <Comp
     className={`inline-flex items-center justify-center gap-2 select-none
       px-4 py-3 text-sm md:text-base font-semibold rounded-2xl
-      bg-gradient-to-br from-indigo-600 to-indigo-500 text-white
-      shadow-lg shadow-indigo-500/25 hover:shadow-xl active:scale-95 
+      bg-gradient-to-br from-primary-600 to-primary-500 text-white
+      shadow-lg shadow-primary-500/25 hover:shadow-xl active:scale-95 
       focus:outline-none
       transition-all disabled:opacity-60 ${className}`}
     {...props}
@@ -23,8 +23,8 @@ export const Button = ({ as: Comp = 'button', className = '', children, ...props
 export const GhostButton = ({ as: Comp = 'button', className = '', children, ...props }) => (
   <Comp
     className={`inline-flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg
-      backdrop-blur-sm border border-white/10 text-slate-700
-      hover:bg-white/60 active:scale-95 focus:outline-none
+      backdrop-blur-sm border border-primary-500/30 text-secondary-200
+      hover:bg-secondary-700/60 active:scale-95 focus:outline-none
       transition ${className}`}
     {...props}
   >
@@ -36,9 +36,9 @@ export const Input = React.forwardRef((props, ref) => (
   <input
     ref={ref}
     {...props}
-    className={`w-full px-3 py-2 text-sm md:text-base rounded-xl bg-white/60 backdrop-blur-sm
-      border border-slate-200/30 outline-none focus:border-indigo-400
-      placeholder:text-slate-400 transition ${props.className || ''}`}
+    className={`w-full px-3 py-2 text-sm md:text-base rounded-xl bg-secondary-700/60 backdrop-blur-sm
+      border border-secondary-600/50 outline-none focus:border-primary-400 text-white
+      placeholder:text-secondary-400 transition ${props.className || ''}`}
   />
 ));
 
@@ -57,8 +57,8 @@ export const Textarea = (props) => {
       ref={textareaRef}
       rows={1}
       {...props}
-      className={`w-full px-3 py-2 text-sm md:text-base rounded-xl bg-white/60 backdrop-blur-sm
-        border border-white/10 outline-none focus:ring-2 focus:ring-indigo-400 transition resize-none overflow-y-hidden
+      className={`w-full px-3 py-2 text-sm md:text-base rounded-xl bg-secondary-700/60 backdrop-blur-sm
+        border border-secondary-600/50 outline-none focus:ring-2 focus:ring-primary-400 transition resize-none overflow-y-hidden text-white
         ${props.className || ''}`}
     />
   );
@@ -67,8 +67,8 @@ export const Textarea = (props) => {
 export const Select = (props) => (
   <select
     {...props}
-    className={`w-full px-3 py-2 text-sm md:text-base rounded-xl bg-white/60 backdrop-blur-sm
-      border border-slate-200/30 outline-none focus:border-indigo-400 transition ${props.className || ''}`}
+    className={`w-full px-3 py-2 text-sm md:text-base rounded-xl bg-secondary-700/60 backdrop-blur-sm
+      border border-secondary-600/50 outline-none focus:border-primary-400 transition text-white ${props.className || ''}`}
   />
 );
 
@@ -111,8 +111,8 @@ export const DateTimePicker = ({ value, onChange, ...props }) => {
             leaveTo="opacity-0 translate-y-1"
           >
             <Popover.Panel className="absolute z-10 mt-2 w-screen max-w-sm">
-              <div className="overflow-hidden rounded-2xl shadow-2xl border-2 border-black dark:border-white">
-                <div className="relative bg-white/90 backdrop-blur-xl p-2">
+              <div className="overflow-hidden rounded-2xl shadow-2xl border-2 border-primary-500/30">
+                <div className="relative bg-secondary-800/95 backdrop-blur-xl p-2">
                   <DayPicker
                     mode="single"
                     selected={selectedDate}
@@ -123,15 +123,15 @@ export const DateTimePicker = ({ value, onChange, ...props }) => {
                     classNames={{
                       caption: 'flex justify-between items-center mb-3 px-1 gap-2',
                       caption_label: 'text-sm font-semibold',
-                      nav_button: 'h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-200/60 border-2 border-transparent hover:border-black',
-                      head_row: 'grid grid-cols-7 gap-1 text-xs text-slate-500 mb-1', // Use grid for alignment and gap
-                      head_cell: 'text-center font-medium text-slate-700', // Make day names more prominent and centered
+                      nav_button: 'h-8 w-8 flex items-center justify-center rounded-lg hover:bg-secondary-200/60 border-2 border-transparent hover:border-black',
+                      head_row: 'grid grid-cols-7 gap-1 text-xs text-secondary-300 mb-1', // Use grid for alignment and gap
+                      head_cell: 'text-center font-medium text-white', // Make day names more prominent and centered
                       row: 'flex w-full mt-2',
                       cell: 'w-10 h-10 flex items-center justify-center text-sm p-0',
-                      day: 'w-full h-full flex items-center justify-center rounded-lg hover:bg-slate-200/60',
-                      day_today: 'border-2 border-indigo-500',
+                      day: 'w-full h-full flex items-center justify-center rounded-lg hover:bg-secondary-200/60',
+                      day_today: 'border-2 border-primary-500',
                       day_selected: 'bg-black text-white hover:bg-black',
-                      day_outside: 'text-slate-400 dark:text-slate-500',
+                      day_outside: 'text-secondary-400 dark:text-secondary-500',
                     }}
                     components={{
                       Caption: (props) => {
@@ -160,8 +160,8 @@ export const Card = ({ className = '', children, ...props }) => (
     initial={{ opacity: 0, y: 8, scale: 0.995 }}
     animate={{ opacity: 1, y: 0, scale: 1 }}
     transition={{ duration: 0.18 }}
-    className={`bg-white/70 backdrop-blur-sm border border-white/10
-      p-4 md:p-6 mb-3 rounded-2xl shadow-lg shadow-slate-300/20 ${className}`}
+    className={`bg-secondary-800/95 backdrop-blur-sm border border-primary-500/20
+      p-4 md:p-6 mb-3 rounded-2xl shadow-lg shadow-black/30 text-white ${className}`}
     {...props}
   >
     {children}
@@ -173,7 +173,7 @@ export const SectionTitle = ({children}) => (
     initial={{ opacity: 0, x: -8 }}
     animate={{ opacity: 1, x: 0 }}
     transition={{ duration: 0.18 }}
-    className="text-lg md:text-2xl font-semibold mb-4 flex items-center gap-2 text-slate-800"
+    className="text-lg md:text-2xl font-semibold mb-4 flex items-center gap-2 text-white"
   >
     {children}
   </motion.div>
@@ -186,12 +186,12 @@ export const Badge = ({children, className=''}) => (
 );
 
 export const Progress = ({value=0}) => (
-  <div className="w-full h-3 bg-slate-200/60 rounded-full overflow-hidden">
+  <div className="w-full h-3 bg-secondary-200/60 rounded-full overflow-hidden">
     <motion.div
       initial={{ width: 0 }}
       animate={{ width: `${Math.min(100,Math.max(0,value))}%` }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 relative"
+      className="h-full bg-gradient-to-r from-primary-500 to-primary-400 relative"
     >
       <span className="absolute right-1 top-1/2 -translate-y-1/2 px-1 text-[10px] font-mono text-white">
         {value}%

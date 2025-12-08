@@ -279,12 +279,12 @@ function timeLeftLabel(dueAt){
 
 function statusBadge(s){
   const map = { todo:'ยังไม่ทำ', doing:'กำลังทำ', done:'เสร็จแล้ว' }
-  const cls = s==='done'? 'border-emerald-400 text-emerald-600 dark:text-emerald-300' : s==='doing'? 'border-amber-400 text-amber-600 dark:text-amber-300' : 'border-slate-300 text-slate-500 dark:text-slate-300'
+  const cls = s==='done'? 'border-emerald-400 text-emerald-600 dark:text-emerald-300' : s==='doing'? 'border-amber-400 text-amber-600 dark:text-amber-300' : 'border-secondary-300 text-secondary-300 dark:text-secondary-300'
   return <Badge className={cls}>{map[s]}</Badge>
 }
 
 function getUrgencyStyle(dueAt) {
-  if (!dueAt) return { gradientClass: '', textColorClass: 'text-slate-500', showFire: false };
+  if (!dueAt) return { gradientClass: '', textColorClass: 'text-secondary-300', showFire: false };
 
   const hoursLeft = differenceInHours(new Date(dueAt), new Date());
 
@@ -298,7 +298,7 @@ function getUrgencyStyle(dueAt) {
     return { gradientClass: 'bg-gradient-to-b from-amber-400 to-yellow-300', textColorClass: 'text-amber-500 dark:text-amber-400', showFire: false };
   }
   // Not urgent
-  return { gradientClass: '', textColorClass: 'text-slate-500', showFire: false };
+  return { gradientClass: '', textColorClass: 'text-secondary-300', showFire: false };
 }
 
 // --- Main App ---
@@ -315,6 +315,9 @@ export default function App(){
 
   // Listen to auth state changes
   useEffect(() => {
+    // Force dark mode
+    document.documentElement.classList.add('dark');
+    
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoadingAuth(false);
@@ -389,7 +392,7 @@ export default function App(){
   useEffect(()=>{ tasks.forEach(scheduleReminder) }, [tasks])
 
   if (loadingAuth) {
-    return <div className="h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-900">รอสักครู่นะงับ...</div>;
+    return <div className="h-screen flex items-center justify-center bg-secondary-100 dark:bg-slate-900">รอสักครู่นะงับ...</div>;
   }
 
   if (!user) {
@@ -401,33 +404,33 @@ export default function App(){
   }
 
   return (
-    <div className="min-h-screen text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-slate-950 font-sans">
+    <div className="min-h-screen text-secondary-50 bg-secondary-900 font-sans">
       
   <div className="md:flex pb-16 md:pb-0">
         {/* Sidebar for Desktop - Brutalist Style */}
-  <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-black border-r-4 border-black dark:border-white p-4">
+  <aside className="hidden md:flex flex-col w-64 bg-secondary-800 border-r-4 border-secondary-900 p-4">
           <div className="flex items-center gap-3 mb-8 px-2">
             <img src="/logo.svg" alt="FlowO Logo" className="h-9" />
           </div>
           <nav className="flex-1 space-y-2">
             {navItems.map(({ key, label, icon: Icon }) => (
               <a key={key} href="#" onClick={(e) => { e.preventDefault(); setView(key); }}
-                 className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${view === key ? 'bg-white text-indigo-600 shadow-md' : 'hover:bg-slate-200/50 text-slate-600'}`}>
+                 className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${view === key ? 'bg-secondary-700 text-primary-500 shadow-md' : 'hover:bg-secondary-700/50 text-secondary-300'}`}>
                 <Icon className="h-5 w-5" />
                 <span>{label}</span>
               </a>
             ))}
           </nav>
           <div className="mt-auto">
-            <div className="flex items-center gap-2 text-sm p-2 rounded-xl bg-slate-200/50 dark:bg-slate-800/50">
+            <div className="flex items-center gap-2 text-sm p-2 rounded-xl bg-secondary-900/50">
               {user.photoURL ? (
                 <img src={user.photoURL} alt={user.displayName || user.email} className="h-8 w-8 rounded-full" />
               ) : (
-                <div className="h-8 w-8 rounded-full bg-slate-300 dark:bg-slate-700 flex items-center justify-center">
-                  <User className="h-4 w-4 text-slate-500" />
+                <div className="h-8 w-8 rounded-full bg-secondary-700 flex items-center justify-center">
+                  <User className="h-4 w-4 text-secondary-300" />
                 </div>
               )}
-              <span className="truncate flex-1 font-medium">{user.displayName || user.email}</span>
+              <span className="truncate flex-1 font-medium text-secondary-200">{user.displayName || user.email}</span>
             </div>
           </div>
         </aside>
@@ -455,11 +458,11 @@ export default function App(){
       {view === 'tasks' && (
         <div className="fixed left-4 right-4 bottom-20 md:bottom-6 flex items-center justify-between gap-3 z-40">
           {deleteMode ? (
-            <Button onClick={() => { setDeleteMode(false); setSelectedTasksForDeletion(new Set()); }} className="bg-slate-500 hover:bg-slate-600">
+            <Button onClick={() => { setDeleteMode(false); setSelectedTasksForDeletion(new Set()); }} className="bg-secondary-500 hover:bg-secondary-600">
               <X className="h-4 w-4"/> ยกเลิก
             </Button>
           ) : (
-            <Button onClick={() => setDeleteMode(true)} className="bg-slate-600 hover:bg-slate-700">
+            <Button onClick={() => setDeleteMode(true)} className="bg-secondary-600 hover:bg-secondary-700">
               <Trash2 className="h-4 w-4"/>
             </Button>
           )}
@@ -481,11 +484,11 @@ export default function App(){
       )}
 
       {/* Mobile Bottom Navigation */}
-  <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-950/90 border-t border-slate-200/50 dark:border-slate-800/50 p-1">
+  <div className="md:hidden fixed bottom-0 left-0 right-0 bg-secondary-900/90 backdrop-blur-md border-t border-secondary-800 p-1">
         <div className="flex items-center justify-around">
           {navItems.map(({ key, label, icon: Icon }) => (
             <a key={key} href="#" onClick={(e) => { e.preventDefault(); setView(key); }}
-               className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-all ${view === key ? 'text-indigo-600' : 'text-slate-500'}`}>
+               className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-all ${view === key ? 'text-primary-500' : 'text-secondary-300'}`}>
               <Icon className="h-6 w-6" />
               <span className="text-xs mt-1">{label}</span>
             </a>
@@ -615,22 +618,22 @@ function Dashboard({state, tasks, dueSoon, progressToday, lazyScore, setView, se
       <Card>
         <div className="flex items-center justify-between mb-4">
           <SectionTitle><Flame className="h-4 w-4"/> งานที่ด่วนใกล้ถึง</SectionTitle>
-          <div className="text-sm text-slate-500">จัดเรียงตามกำหนดส่ง</div>
+          <div className="text-sm text-secondary-300">จัดเรียงตามกำหนดส่ง</div>
         </div>
 
         <div className="space-y-3">
           {dueSoon.length > 0 ? dueSoon.map(task => (
-            <div key={task.id} className="p-3 rounded-lg bg-white/60 flex items-start justify-between">
+            <div key={task.id} className="p-3 rounded-lg bg-secondary-700/60 flex items-start justify-between">
               <div className="min-w-0 flex-1">
-                <div className="font-medium truncate">{task.title}</div>
-                <div className="text-xs text-slate-500">{task.subjectName || 'ไม่มีวิชา'} • {task.dueAt ? format(new Date(task.dueAt), "d MMM HH:mm", {locale: th}) : 'ไม่ระบุเวลา'}</div>
+                <div className="font-medium truncate text-secondary-100">{task.title}</div>
+                <div className="text-xs text-secondary-300">{task.subjectName || 'ไม่มีวิชา'} • {task.dueAt ? format(new Date(task.dueAt), "d MMM HH:mm", {locale: th}) : 'ไม่ระบุเวลา'}</div>
               </div>
               <div className="ml-3 flex flex-col items-end gap-2">
                 {statusBadge(task.status)}
               </div>
             </div>
           )) : (
-            <div className="text-slate-500 text-center py-6">ไม่มีงานด่วนใกล้ถึง</div>
+            <div className="text-secondary-300 text-center py-6">ไม่มีงานด่วนใกล้ถึง</div>
           )}
         </div>
       </Card>
@@ -652,7 +655,7 @@ function Dashboard({state, tasks, dueSoon, progressToday, lazyScore, setView, se
           </div>
         </div>
 
-        <div className="grid grid-cols-7 gap-1 text-center text-xs text-slate-500 mb-2">
+        <div className="grid grid-cols-7 gap-1 text-center text-xs text-secondary-300 mb-2">
           {['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา'].map(d => (
             <div key={d}>{d}</div>
           ))}
@@ -671,18 +674,18 @@ function Dashboard({state, tasks, dueSoon, progressToday, lazyScore, setView, se
                 className={`
                   aspect-square p-1 rounded-lg cursor-pointer
                   transition-all duration-200
-                  border border-slate-200/50 dark:border-slate-700/50
+                  border border-secondary-700/50
                   backdrop-blur-sm
                   ${indicators.length > 0 ? 'scale-100' : 'scale-90 opacity-60'}
                   ${isSameMonth(day, calendarCursor)
-                    ? `bg-white/60 ${
-                        !modalDate || !isSameDay(day, modalDate) ? 'hover:bg-white/80' : ''
+                    ? `bg-secondary-700/40 ${
+                        !modalDate || !isSameDay(day, modalDate) ? 'hover:bg-secondary-700/60' : ''
                       }`
                     : 'opacity-40'}
-                  ${isSameDay(day, new Date()) ? 'ring-2 ring-indigo-400' : ''}
+                  ${isSameDay(day, new Date()) ? 'ring-2 ring-primary-400' : ''}
                 `}
               >
-                <div className={`text-xs ${isSameDay(day, new Date()) ? 'font-semibold text-indigo-600' : ''}`}>
+                <div className={`text-xs ${isSameDay(day, new Date()) ? 'font-semibold text-primary-600' : ''}`}>
                   {format(day, 'd')}
                 </div>
                 <div className="absolute bottom-1 left-1 right-1 flex flex-col gap-0.5">
@@ -721,10 +724,10 @@ function Dashboard({state, tasks, dueSoon, progressToday, lazyScore, setView, se
               const isEvent = task.taskType === 'event';
               return (
                 <div key={task.id} className="flex gap-4">
-                  <div className="text-xs text-slate-400 w-12 text-right pt-2">{format(start, 'HH:mm')}</div>
-                  <div className={`flex-1 p-3 rounded-lg border ${isEvent ? 'border-green-500' : 'border-blue-500'}`} style={{ backgroundColor: hexToRgba(isEvent ? '#22c55e' : '#3b82f6', 0.1) }}>
-                    <div className="font-medium text-sm">{task.title}</div>
-                    <div className="text-xs text-slate-500">{task.subjectName}</div>
+                  <div className="text-xs text-secondary-300 w-12 text-right pt-2">{format(start, 'HH:mm')}</div>
+                  <div className={`flex-1 p-3 rounded-lg border ${isEvent ? 'border-primary-500' : 'border-blue-500'}`} style={{ backgroundColor: hexToRgba(isEvent ? '#22c55e' : '#3b82f6', 0.1) }}>
+                    <div className="font-medium text-sm text-secondary-100">{task.title}</div>
+                    <div className="text-xs text-secondary-300">{task.subjectName}</div>
                   </div>
                 </div>
               );
@@ -735,8 +738,8 @@ function Dashboard({state, tasks, dueSoon, progressToday, lazyScore, setView, se
                   {/* This div is now just a placeholder for height */}
                   {item.duration > 30 && (
                     <div className="absolute left-0 right-0 flex items-center justify-center">
-                      <div className="w-full border-t-2 border-dashed border-slate-200 dark:border-slate-700 absolute"></div>
-                      <span className="bg-slate-100 dark:bg-slate-900 px-2 text-xs text-slate-400 relative z-10">ว่าง {formatFreeTime(item.duration)}</span>
+                      <div className="w-full border-t-2 border-dashed border-secondary-700 absolute"></div>
+                      <span className="bg-secondary-900 px-2 text-xs text-secondary-300 relative z-10">ว่าง {formatFreeTime(item.duration)}</span>
                     </div>
                   )}
                 </div>
@@ -745,19 +748,19 @@ function Dashboard({state, tasks, dueSoon, progressToday, lazyScore, setView, se
             if (item.type === 'all-day') {
               return (
                 <div key="all-day" className="mb-2">
-                  <div className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">งานที่ต้องทำ (ทั้งวัน)</div>
+                  <div className="text-sm font-semibold text-secondary-600 dark:text-secondary-300 mb-2">งานที่ต้องทำ (ทั้งวัน)</div>
                   {item.tasks.map(t => (
-                    <div key={t.id} className="p-2 rounded-lg bg-slate-100/80 dark:bg-slate-800/80 mb-1 text-sm">{t.title}</div>
+                    <div key={t.id} className="p-2 rounded-lg bg-secondary-100/80 dark:bg-secondary-800/80 mb-1 text-sm">{t.title}</div>
                   ))}
                 </div>
               );
             }
             if (item.type === 'workable') {
               return (
-                <div key="workable-day" className="mb-2 p-3 rounded-lg bg-slate-100/80 dark:bg-slate-800/80">
-                  <div className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2 flex items-center gap-2">มีงานที่รอทำอยู่ ทำดีไหมน้าา {icons.smile}</div>
+                <div key="workable-day" className="mb-2 p-3 rounded-lg bg-secondary-100/80 dark:bg-secondary-800/80">
+                  <div className="text-sm font-semibold text-secondary-600 dark:text-secondary-300 mb-2 flex items-center gap-2">มีงานที่รอทำอยู่ ทำดีไหมน้าา {icons.smile}</div>
                   {item.tasks.map(t => (
-                    <div key={t.id} className="text-sm text-slate-500 dark:text-slate-400">
+                    <div key={t.id} className="text-sm text-secondary-100 dark:text-secondary-300">
                       - {t.title} <span className="text-xs">({t.subjectName})</span>
                     </div>
                   ))}
@@ -766,7 +769,7 @@ function Dashboard({state, tasks, dueSoon, progressToday, lazyScore, setView, se
             }
             return null;
           }) : (
-            <div className="text-slate-500 text-center py-8">บ่มีงานจ้า วันนี้นอนได้</div>
+            <div className="text-secondary-300 text-center py-8">บ่มีงานจ้า วันนี้นอนได้</div>
           )}
         </div>
       </Card>
@@ -784,7 +787,7 @@ function Dashboard({state, tasks, dueSoon, progressToday, lazyScore, setView, se
               const completedTasks = dayTasks.filter(t => t.status === 'done');
 
               if (dayTasks.length === 0) {
-                return <div className="text-slate-500 text-center py-8">บ่มีงานจ้า วันนี้นอนได้</div>;
+                return <div className="text-secondary-300 text-center py-8">บ่มีงานจ้า วันนี้นอนได้</div>;
               }
 
               return (
@@ -793,9 +796,9 @@ function Dashboard({state, tasks, dueSoon, progressToday, lazyScore, setView, se
                     <div className="space-y-2">
                       {activeTasks.map(task => (
                         <div key={task.id} onClick={() => { setView('tasks'); setSelectedSubject(null); }}
-                             className="p-3 rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors">
+                             className="p-3 rounded-lg bg-secondary-700 hover:bg-secondary-600 cursor-pointer transition-colors">
                           <div className="flex items-center justify-between">
-                            <div><div className="font-medium">{task.title}</div><div className="text-xs text-slate-500">{task.subjectName}</div></div>
+                            <div><div className="font-medium text-secondary-100">{task.title}</div><div className="text-xs text-secondary-300">{task.subjectName}</div></div>
                             <div className="flex gap-2">{statusBadge(task.status)}</div>
                           </div>
                         </div>
@@ -804,9 +807,9 @@ function Dashboard({state, tasks, dueSoon, progressToday, lazyScore, setView, se
                   )}
                   {completedTasks.length > 0 && (
                     <div>
-                      <div className="text-sm font-semibold text-slate-500 mt-4 pt-4 border-t border-slate-200/80">งานที่เสร็จแล้ว</div>
+                      <div className="text-sm font-semibold text-secondary-300 mt-4 pt-4 border-t border-secondary-700/80">งานที่เสร็จแล้ว</div>
                       <div className="space-y-2 mt-2">
-                        {completedTasks.map(task => (<div key={task.id} className="p-3 rounded-lg bg-slate-50/50 opacity-70"><div className="font-medium line-through">{task.title}</div><div className="text-xs text-slate-500">{task.subjectName}</div></div>))}
+                        {completedTasks.map(task => (<div key={task.id} className="p-3 rounded-lg bg-secondary-800/50 opacity-70"><div className="font-medium line-through text-secondary-300">{task.title}</div><div className="text-xs text-secondary-300">{task.subjectName}</div></div>))}
                       </div>
                     </div>
                   )}
@@ -827,7 +830,7 @@ function ScheduleView({state, dispatch, userId}) {
   const weekType = getWeekType(selectedDate);
   const weekTypeLabel = weekType === 'odd' ? 'สัปดาห์คี่' : 'สัปดาห์คู่';
   const weekTypeColor = weekType === 'odd' 
-    ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/50' 
+    ? 'bg-gradient-to-r from-primary-600 to-green-500 text-black shadow-lg shadow-primary-500/50' 
     : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/50';
 
   const todayCourses = useMemo(() => {
@@ -928,10 +931,10 @@ function ScheduleView({state, dispatch, userId}) {
             {todayCourses.map(course => {
               const { status, isOverridden } = getCourseStatus(course, selectedDate, state.scheduleOverrides);
               const statusBgColor = status === 'online' 
-                ? 'bg-blue-500'
+                ? 'bg-blue-600'
                 : status === 'onsite'
-                ? 'bg-green-500'
-                : 'bg-slate-500';
+                ? 'bg-primary-600'
+                : 'bg-secondary-600';
               const statusLabel = status === 'online'
                 ? <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm leading-none">globe</span> <span className="leading-none">ออนไลน์</span></span>
                 : status === 'onsite'
@@ -942,11 +945,11 @@ function ScheduleView({state, dispatch, userId}) {
                 <div 
                   key={course.id}
                   onClick={() => setSelectedCourse({ course, date: selectedDate })}
-                  className="rounded-xl bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 cursor-pointer transition-all overflow-hidden border-l-4"
+                  className="rounded-xl bg-secondary-800 hover:bg-secondary-700 cursor-pointer transition-all overflow-hidden border-l-4"
                   style={{ borderLeftColor: course.color }}
                 >
                   {/* Status Bar */}
-                  <div className={`${statusBgColor} text-white px-4 py-2 font-bold text-sm flex items-center justify-between`}>
+                  <div className={`${statusBgColor} ${status === 'onsite' ? 'text-secondary-950' : 'text-white'} px-4 py-2 font-bold text-sm flex items-center justify-between`}>
                     <div className="flex items-center gap-2">
                       {isOverridden && <RefreshCw className="h-4 w-4 animate-spin" />}
                       {statusLabel}
@@ -961,8 +964,8 @@ function ScheduleView({state, dispatch, userId}) {
                   <div className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="font-semibold text-lg mb-2">{course.name}</div>
-                        <div className="text-sm text-slate-600 dark:text-slate-300 space-y-1">
+                        <div className="font-semibold text-lg mb-2 text-white">{course.name}</div>
+                        <div className="text-sm text-white dark:text-white space-y-1">
                           <div className="flex items-center gap-2">{icons.book} รหัสวิชา: {course.code}</div>
                           {course.room && <div className="flex items-center gap-2">{icons.door} ห้องเรียน: {course.room}</div>}
                           {course.pRoom && <div className="flex items-center gap-2">{icons.location} ห้อง P: {course.pRoom}</div>}
@@ -976,7 +979,7 @@ function ScheduleView({state, dispatch, userId}) {
             })}
           </div>
         ) : (
-          <div className="text-center text-slate-500 py-10 flex flex-col items-center gap-2">
+          <div className="text-center text-secondary-300 py-10 flex flex-col items-center gap-2">
             {icons.celebration}
             <span>ไม่มีเรียนในวันนี้</span>
           </div>
@@ -988,7 +991,7 @@ function ScheduleView({state, dispatch, userId}) {
         <div className="flex items-center justify-between mb-1">
           <div className="flex flex-col">
             <SectionTitle>ตารางเรียน</SectionTitle>
-            <div className="text-xs text-slate-500 flex items-center gap-1">
+            <div className="text-xs text-secondary-300 flex items-center gap-1">
               {icons.lightbulb} คลิกที่วิชาเพื่อแก้ไข รูปแบบที่เรียนชั่วคราว
             </div>
           </div>
@@ -997,11 +1000,11 @@ function ScheduleView({state, dispatch, userId}) {
           <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th className="border border-slate-200 dark:border-slate-700 p-2 bg-slate-50 dark:bg-slate-800 text-sm font-semibold sticky left-0 z-10">เวลา</th>
+                <th className="border border-secondary-700 p-2 bg-secondary-800 text-sm font-semibold sticky left-0 z-10 text-white">เวลา</th>
                 {weekDays.map(day => (
-                  <th key={format(day, 'yyyy-MM-dd')} className="border border-slate-200 dark:border-slate-700 p-2 bg-slate-50 dark:bg-slate-800 text-sm font-semibold min-w-[100px]">
+                  <th key={format(day, 'yyyy-MM-dd')} className="border border-secondary-700 p-2 bg-secondary-800 text-sm font-semibold min-w-[100px] text-white">
                     {format(day, 'EEEE', {locale: th})}
-                    <div className="text-xs font-normal text-slate-500">{format(day, 'd MMM', {locale: th})}</div>
+                    <div className="text-xs font-normal text-secondary-300">{format(day, 'd MMM', {locale: th})}</div>
                   </th>
                 ))}
               </tr>
@@ -1012,7 +1015,7 @@ function ScheduleView({state, dispatch, userId}) {
                 
                 return (
                   <tr key={time}>
-                    <td className="border border-slate-200 dark:border-slate-700 p-2 text-xs text-slate-500 font-medium bg-slate-50 dark:bg-slate-800 sticky left-0 z-10">{time}</td>
+                    <td className="border border-secondary-700 p-2 text-xs text-secondary-300 font-medium bg-secondary-800 sticky left-0 z-10">{time}</td>
                     {weekDays.map((day, dayIndex) => {
                       const dayKey = format(day, 'yyyy-MM-dd');
                       const cellKey = `${dayKey}-${timeIndex}`;
@@ -1027,7 +1030,7 @@ function ScheduleView({state, dispatch, userId}) {
                       if (courseAtTime && courseAtTime.startTime === time) {
                         const rowspan = getTimeSlotRowspan(courseAtTime);
                         const { status, isOverridden } = getCourseStatus(courseAtTime, day, state.scheduleOverrides);
-                        const statusBgColor = status === 'online' ? 'bg-blue-500' : status === 'onsite' ? 'bg-green-500' : 'bg-slate-500';
+                        const statusBgColor = status === 'online' ? 'bg-blue-600' : status === 'onsite' ? 'bg-primary-600' : 'bg-secondary-600';
                         const statusIcon = status === 'online'
   ? <span className="material-symbols-outlined text-[12px] leading-none">globe</span>
   : status === 'onsite'
@@ -1045,14 +1048,14 @@ function ScheduleView({state, dispatch, userId}) {
                             key={dayKey} 
                             rowSpan={rowspan}
                             onClick={() => setSelectedCourse({ course: courseAtTime, date: day })}
-                            className="border border-slate-200 dark:border-slate-700 p-0 align-top cursor-pointer hover:shadow-lg hover:brightness-95 transition-all duration-200 group"
+                            className="border border-secondary-700 p-0 align-top cursor-pointer hover:brightness-110 transition-all duration-200 group"
                             style={{ backgroundColor: hexToRgba(courseAtTime.color, 0.15) }}
                             title="คลิกเพื่อดูรายละเอียดและแก้ไขสถานะ"
                           >
                             <div className="h-full flex flex-col">
                               {/* Status Bar */}
                               <div 
-                                className={`${statusBgColor} text-white px-2 py-1 text-[10px] font-bold flex items-center justify-center gap-1`}
+                                className={`${statusBgColor} ${status === 'onsite' ? 'text-secondary-950' : 'text-white'} px-2 py-1 text-[10px] font-bold flex items-center justify-center gap-1`}
                               >
                                 {isOverridden && <RefreshCw className="h-3 w-3 animate-spin" />}
                                 <span className="flex items-center gap-1">
@@ -1063,16 +1066,16 @@ function ScheduleView({state, dispatch, userId}) {
                               
                               {/* Course Info */}
                               <div className="p-2 flex-1">
-                                <div className="font-medium text-xs">{courseAtTime.name}</div>
-                                <div className="text-slate-600 dark:text-slate-300 text-[10px]">{courseAtTime.code}</div>
-                                <div className="text-slate-500 text-[10px] mt-1">{courseAtTime.startTime}-{courseAtTime.endTime}</div>
+                                <div className="font-medium text-xs text-white">{courseAtTime.name}</div>
+                                <div className="text-secondary-300 text-[10px]">{courseAtTime.code}</div>
+                                <div className="text-secondary-300 text-[10px] mt-1">{courseAtTime.startTime}-{courseAtTime.endTime}</div>
                               </div>
                             </div>
                           </td>
                         );
                       } else if (!courseAtTime) {
                         return (
-                          <td key={dayKey} className="border border-slate-200 dark:border-slate-700 p-1">
+                          <td key={dayKey} className="border border-secondary-700 p-1">
                           </td>
                         );
                       }
@@ -1096,37 +1099,37 @@ function ScheduleView({state, dispatch, userId}) {
           
           return (
             <Modal onClose={() => setSelectedCourse(null)}>
-              <div className="text-lg font-semibold mb-4">{course.name}</div>
+              <div className="text-lg font-semibold mb-4 text-white">{course.name}</div>
               <div className="space-y-3">
                 <div>
-                  <label className="text-xs text-slate-500">รหัสวิชา</label>
-                  <div className="font-medium">{course.code}</div>
+                  <label className="text-xs text-secondary-300">รหัสวิชา</label>
+                  <div className="font-medium text-white">{course.code}</div>
                 </div>
                 {course.room && (
                   <div>
-                    <label className="text-xs text-slate-500">ห้องเรียน</label>
-                    <div className="font-medium">{course.room}</div>
+                    <label className="text-xs text-secondary-300">ห้องเรียน</label>
+                    <div className="font-medium text-white">{course.room}</div>
                   </div>
                 )}
                 {course.pRoom && (
                   <div>
-                    <label className="text-xs text-slate-500">ห้อง P</label>
-                    <div className="font-medium">{course.pRoom}</div>
+                    <label className="text-xs text-secondary-300">ห้อง P</label>
+                    <div className="font-medium text-white">{course.pRoom}</div>
                   </div>
                 )}
                 {course.teacher && (
                   <div>
-                    <label className="text-xs text-slate-500">อาจารย์</label>
-                    <div className="font-medium">{course.teacher}</div>
+                    <label className="text-xs text-secondary-300">อาจารย์</label>
+                    <div className="font-medium text-white">{course.teacher}</div>
                   </div>
                 )}
                 <div>
-                  <label className="text-xs text-slate-500">เวลาเรียน</label>
-                  <div className="font-medium">{course.startTime} - {course.endTime}</div>
+                  <label className="text-xs text-secondary-300">เวลาเรียน</label>
+                  <div className="font-medium text-white">{course.startTime} - {course.endTime}</div>
                 </div>
                 <div>
-                  <label className="text-xs text-slate-500">เงื่อนไขการเรียน</label>
-                  <div className="font-medium">
+                  <label className="text-xs text-secondary-300">เงื่อนไขการเรียน</label>
+                  <div className="font-medium text-white">
                     {course.scheduleType === 'odd-onsite' && 'เข้าชั้นเรียนในสัปดาห์คี่ / ออนไลน์ในสัปดาห์คู่'}
                     {course.scheduleType === 'even-onsite' && 'เข้าชั้นเรียนในสัปดาห์คู่ / ออนไลน์ในสัปดาห์คี่'}
                     {course.scheduleType === 'online-always' && 'ออนไลน์ตลอด'}
@@ -1136,15 +1139,15 @@ function ScheduleView({state, dispatch, userId}) {
               </div>
 
               {/* Weekly Override Section */}
-              <div className="mt-6 pt-4 border-t-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg ">
-                <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 flex justify-center items-center gap-2">{icons.bolt} เปลี่ยนแปลงชั่วคราว</div>
+              <div className="mt-6 pt-4 border-t-2 border-secondary-200 dark:border-secondary-700 bg-secondary-50 dark:bg-secondary-800/50 p-4 rounded-lg ">
+                <div className="text-sm font-semibold text-secondary-700 dark:text-secondary-300 mb-2 flex justify-center items-center gap-2">{icons.bolt} เปลี่ยนแปลงชั่วคราว</div>
                 {/* แยกเป็น 2 ชั้น */}
                 <div className="flex flex-col gap-4">
                   {/* ชั้นบน: สถานะปัจจุบัน */}
                   <div>
-                    <div className="font-bold text-sm flex justify-center gap-2 mt-1">
-                      <label className="text-sm text-slate-500">สถานะปัจจุบัน</label>
-                      {isOverridden && <RefreshCw className="h-5 w-5 animate-spin text-indigo-500" />}
+                    <div className="font-bold text-sm flex justify-center gap-2 mt-1 text-white">
+                      <label className="text-sm text-secondary-300">สถานะปัจจุบัน</label>
+                      {isOverridden && <RefreshCw className="h-5 w-5 animate-spin text-primary-500" />}
                       {status === 'online'
                         ? <><span className="material-symbols-outlined">globe</span> ออนไลน์</>
                         : <><span className="material-symbols-outlined">school</span> ออนไซต์</>
@@ -1214,9 +1217,9 @@ function TasksView({state, dispatch, tasks, filteredTasks, setQuery, query, sele
   return (
     <div className="space-y-6 pb-24">
       {/* Header with Search */}
-      <div className="sticky top-0 z-20 bg-slate-100/80 dark:bg-slate-950/80 backdrop-blur-xl p-4 -mx-4">
+      <div className="sticky top-0 z-20 bg-secondary-900/80 backdrop-blur-xl p-4 -mx-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-indigo-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary-400" />
           <Input 
             placeholder="ค้นหางาน..." 
             value={query} 
@@ -1227,11 +1230,11 @@ function TasksView({state, dispatch, tasks, filteredTasks, setQuery, query, sele
       </div>
 
       {/* Subject Filters */}
-      <div className="sticky top-[76px] z-10 -mx-4 px-4 py-2 bg-slate-100/60 dark:bg-slate-950/60 backdrop-blur-xl">
+      <div className="sticky top-[76px] z-10 -mx-4 px-4 py-2 bg-secondary-900/60 backdrop-blur-xl">
         <div className="flex flex-wrap gap-2">
           <GhostButton 
             onClick={() => setSelectedSubject(null)}
-            className={`transition-all ${!selectedSubject ? 'bg-indigo-500 !text-white shadow-lg' : 'bg-white/40'}`}
+            className={`transition-all ${!selectedSubject ? 'bg-primary-500 !text-secondary-900 shadow-lg' : 'bg-secondary-800/40 text-secondary-300'}`}
           >
             ทั้งหมด
           </GhostButton>
@@ -1240,7 +1243,7 @@ function TasksView({state, dispatch, tasks, filteredTasks, setQuery, query, sele
               key={s.id} 
               onClick={() => setSelectedSubject(s.id)} 
               className={`transition-all
-                ${selectedSubject === s.id ? 'bg-indigo-500 !text-white shadow-lg' : 'bg-white/40'}
+                ${selectedSubject === s.id ? 'bg-primary-500 !text-secondary-900 shadow-lg' : 'bg-secondary-800/40 text-secondary-300'}
               `}
             >
               <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: s.color }} />
@@ -1275,7 +1278,7 @@ function TasksView({state, dispatch, tasks, filteredTasks, setQuery, query, sele
           ))}
         </AnimatePresence>
         {filteredTasks.length === 0 && 
-          <div className="text-center text-slate-500 py-10">ไม่พบงานตามที่ค้นหา</div>
+          <div className="text-center text-secondary-300 py-10">ไม่พบงานตามที่ค้นหา</div>
         }
       </div>
 
@@ -1352,20 +1355,20 @@ function AddTaskButton({subjects, onAdd}){
           <Modal onClose={()=>setOpen(false)}>
             <div className="text-lg font-semibold mb-4 px-2">เพิ่มงานใหม่</div>
             <div className="px-2 mb-4">
-              <label className="text-xs text-slate-500 mb-1 block">ประเภท</label>
+              <label className="text-xs text-secondary-300 mb-1 block">ประเภท</label>
               <div className="flex gap-2">
-                <GhostButton onClick={() => setForm({...form, taskType: 'deadline'})} className={`flex-1 ${form.taskType === 'deadline' ? 'bg-indigo-500 !text-white' : 'bg-white/40'}`}><span className="flex items-center gap-2">{icons.task} งาน</span></GhostButton>
-                <GhostButton onClick={() => setForm({...form, taskType: 'event'})} className={`flex-1 ${form.taskType === 'event' ? 'bg-indigo-500 !text-white' : 'bg-white/40'}`}><span className="flex items-center gap-2">{icons.event} นัดหมาย</span></GhostButton>
+                <GhostButton onClick={() => setForm({...form, taskType: 'deadline'})} className={`flex-1 ${form.taskType === 'deadline' ? 'bg-primary-500 !text-secondary-900' : 'bg-secondary-700/40 text-secondary-300'}`}><span className="flex items-center gap-2">{icons.task} งาน</span></GhostButton>
+                <GhostButton onClick={() => setForm({...form, taskType: 'event'})} className={`flex-1 ${form.taskType === 'event' ? 'bg-primary-500 !text-secondary-900' : 'bg-secondary-700/40 text-secondary-300'}`}><span className="flex items-center gap-2">{icons.event} นัดหมาย</span></GhostButton>
               </div>
             </div>
 
             <div className="overflow-y-auto max-h-[calc(85vh-8rem)] px-2">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-4">
                 <div className="md:col-span-2">
-                  <label className="text-xs text-slate-500 mb-1 block">รายวิชา</label>
+                  <label className="text-xs text-secondary-300 mb-1 block">รายวิชา</label>
                   <div className="flex flex-wrap gap-2">
                     {subjects.map(s => (
-                      <GhostButton key={s.id} onClick={() => setForm({ ...form, subjectId: s.id })} className={`${form.subjectId === s.id ? 'bg-indigo-500 !text-white' : 'bg-white/40'}`}>
+                      <GhostButton key={s.id} onClick={() => setForm({ ...form, subjectId: s.id })} className={`${form.subjectId === s.id ? 'bg-primary-500 !text-secondary-900' : 'bg-secondary-700/40 text-secondary-300'}`}>
                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} /> {s.name}
                       </GhostButton>
                     ))}
@@ -1379,7 +1382,7 @@ function AddTaskButton({subjects, onAdd}){
                   <label className="text-xs">รายละเอียด</label>
                   <Textarea value={form.detail} onChange={e=>setForm({...form, detail:e.target.value})} placeholder="โน้ตย่อย หรือ checklist คร่าวๆ" />
                 </div>
-                <div className="md:col-span-2 p-3 rounded-2xl bg-slate-100/50">
+                <div className="md:col-span-2 p-3 rounded-2xl bg-secondary-800/50">
                   <div className="flex justify-center">
                     <DayPicker
                       mode="range"
@@ -1390,7 +1393,7 @@ function AddTaskButton({subjects, onAdd}){
                       weekStartsOn={1}
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4 mt-2 pt-2 border-t border-slate-200/50">
+                  <div className="grid grid-cols-2 gap-4 mt-2 pt-2 border-t border-secondary-700/50">
                     {form.taskType === 'deadline' && (
                       <div>
                         <label className="text-xs">เวลาเริ่ม</label>
@@ -1402,7 +1405,7 @@ function AddTaskButton({subjects, onAdd}){
                       <Input type="time" value={form.dueAt ? format(new Date(form.dueAt), 'HH:mm') : ''} onChange={e => handleTimeChange('dueAt', e.target.value)} />
                     </div>
                   </div>
-                  <div className="text-xs text-center text-slate-500 mt-2">
+                  <div className="text-xs text-center text-secondary-300 mt-2">
                     {form.startAt && form.dueAt ? 'เลือกวันเริ่มต้นและสิ้นสุดแล้ว' : form.dueAt ? 'เลือกวันสิ้นสุดแล้ว คลิกอีกครั้งเพื่อเลือกวันเริ่มต้น' : 'คลิกเพื่อเลือกวัน'}
                   </div>
                 </div>
@@ -1418,7 +1421,7 @@ function AddTaskButton({subjects, onAdd}){
                       { value: 'งาน', label: 'งาน' },
                       { value: 'ส่วนตัว', label: 'ส่วนตัว' },
                     ].map(c => (
-                      <GhostButton key={c.value} onClick={() => setForm({ ...form, category: c.value })} className={`${form.category === c.value ? 'bg-indigo-500 !text-white' : 'bg-white/40'}`}>
+                      <GhostButton key={c.value} onClick={() => setForm({ ...form, category: c.value })} className={`${form.category === c.value ? 'bg-primary-500 !text-secondary-900' : 'bg-secondary-700/40 text-secondary-300'}`}>
                         {c.label}
                       </GhostButton>
                     ))}
@@ -1432,7 +1435,7 @@ function AddTaskButton({subjects, onAdd}){
                       { value: 'doing', label: 'กำลังทำ' },
                       { value: 'done', label: 'เสร็จแล้ว' },
                     ].map(s => (
-                      <GhostButton key={s.value} onClick={() => setForm({ ...form, status: s.value })} className={form.status === s.value ? 'bg-indigo-500 !text-white' : 'bg-white/40'}>
+                      <GhostButton key={s.value} onClick={() => setForm({ ...form, status: s.value })} className={form.status === s.value ? 'bg-primary-500 !text-secondary-900' : 'bg-secondary-700/40 text-secondary-300'}>
                         {s.label}
                       </GhostButton>
                     ))}
@@ -1448,7 +1451,7 @@ function AddTaskButton({subjects, onAdd}){
                     ].map(r=> (
                       <GhostButton key={r.label} onClick={()=>{
                         setForm(f=> ({...f, reminders: f.reminders.some(x=>x.type===r.type && x.amount===r.amount) ? f.reminders.filter(x=>!(x.type===r.type && x.amount===r.amount)) : [...f.reminders, r]}))
-                      }} className={form.reminders.some(x=>x.type===r.type && x.amount===r.amount)? 'bg-indigo-500 !text-white' : 'bg-white/40'}>
+                      }} className={form.reminders.some(x=>x.type===r.type && x.amount===r.amount)? 'bg-primary-500 !text-secondary-900' : 'bg-secondary-700/40 text-secondary-300'}>
                         <Bell className="h-4 w-4"/> {r.label}
                       </GhostButton>
                     ))}
@@ -1497,9 +1500,9 @@ function HorizontalScroller({ children }) {
 
   return (
     <div className="relative flex items-center">
-      {showLeft && <button onClick={() => scroll(-150)} className="absolute left-0 z-10 h-full px-1 bg-gradient-to-r from-slate-100 dark:from-slate-900 to-transparent"><ChevronLeft className="h-5 w-5 text-slate-500"/></button>}
+      {showLeft && <button onClick={() => scroll(-150)} className="absolute left-0 z-10 h-full px-1 bg-gradient-to-r from-secondary-900 to-transparent"><ChevronLeft className="h-5 w-5 text-secondary-300"/></button>}
       <div ref={scrollRef} className="flex gap-2 overflow-x-auto scroll-smooth py-1" style={{ scrollbarWidth: 'none', '-ms-overflow-style': 'none', 'WebkitOverflowScrolling': 'touch' }}>{children}</div>
-      {showRight && <button onClick={() => scroll(150)} className="absolute right-0 z-10 h-full px-1 bg-gradient-to-l from-slate-100 dark:from-slate-900 to-transparent"><ChevronRight className="h-5 w-5 text-slate-500"/></button>}
+      {showRight && <button onClick={() => scroll(150)} className="absolute right-0 z-10 h-full px-1 bg-gradient-to-l from-secondary-900 to-transparent"><ChevronRight className="h-5 w-5 text-secondary-300"/></button>}
     </div>
   );
 }
@@ -1542,28 +1545,28 @@ function TaskItem({task, onUpdate, onView, isInDeleteMode, isSelected, onToggleS
   };
 
   return (
-    <Card onClick={handleClick} className={`${statusGradientClass} cursor-pointer transition-all ${isSelected ? 'ring-2 ring-indigo-500' : ''}`}>
+    <Card onClick={handleClick} className={`${statusGradientClass} cursor-pointer transition-all ${isSelected ? 'ring-2 ring-primary-500' : ''}`}>
       <div className="flex items-start gap-4">
         {/* Status Toggle Button */}
         <button onClick={handleStatusChange} className="flex-shrink-0 mt-1 transition-transform active:scale-90" title="คลิกเพื่อเปลี่ยนสถานะ">
           {task.status === 'done' && <CheckCircle className="h-6 w-6 text-emerald-500" />}
           {task.status === 'doing' && <div className="h-6 w-6 rounded-full border-2 border-amber-500 flex items-center justify-center"><Minus className="h-4 w-4 text-amber-500"/></div>}
-          {task.status === 'todo' && <Circle className="h-6 w-6 text-slate-300 dark:text-slate-600" />}
+          {task.status === 'todo' && <Circle className="h-6 w-6 text-secondary-600" />}
         </button>
 
         {/* Task Details */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="font-medium truncate">{task.title}</div>
-            {task.subjectName && <Badge className="border-slate-300 text-slate-500"><span className="inline-block w-2 h-2 rounded-full mr-1" style={{background:task.subjectColor}}/> {task.subjectName}</Badge>}
+            <div className="font-medium truncate text-secondary-100">{task.title}</div>
+            {task.subjectName && <Badge className="border-secondary-600/50 text-secondary-300"><span className="inline-block w-2 h-2 rounded-full mr-1" style={{background:task.subjectColor}}/> {task.subjectName}</Badge>}
           </div>
           {task.detail && (
-            <div className={`text-sm text-slate-600 dark:text-slate-300 mt-1 whitespace-pre-wrap line-clamp-4`}>
+            <div className={`text-sm text-secondary-300 mt-1 whitespace-pre-wrap line-clamp-4`}>
               {task.detail}
             </div>
           )}
           <div className="mt-2">
-            <div className="text-xs text-slate-500 mt-1 flex items-center gap-2 flex-wrap">
+            <div className="text-xs text-secondary-300 mt-1 flex items-center gap-2 flex-wrap">
               {task.dueAt ? (
                 isEvent ? (
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3"/> นัดหมาย: {format(new Date(task.dueAt), "d MMM yy HH:mm", {locale: th})}</span>
@@ -1580,7 +1583,7 @@ function TaskItem({task, onUpdate, onView, isInDeleteMode, isSelected, onToggleS
         </div>
         {isInDeleteMode && (
           <div className="absolute top-2 right-2">
-            <CheckCircle className={`h-6 w-6 transition-all ${isSelected ? 'text-indigo-500 scale-100' : 'text-slate-300 dark:text-slate-600 scale-0'}`} />
+            <CheckCircle className={`h-6 w-6 transition-all ${isSelected ? 'text-primary-500 scale-100' : 'text-secondary-600 scale-0'}`} />
           </div>
         )}
       </div>
@@ -1591,36 +1594,36 @@ function TaskItem({task, onUpdate, onView, isInDeleteMode, isSelected, onToggleS
 function TaskDetailModal({ task, onClose }) {
   return (
     <Modal onClose={onClose}>
-      <div className="text-lg font-semibold mb-2">รายละเอียดงาน</div>
+      <div className="text-lg font-semibold mb-2 text-white">รายละเอียดงาน</div>
       <div className="space-y-3">
         <div>
-          <label className="text-xs text-slate-500">ชื่องาน</label>
-          <div className="font-medium">{task.title}</div>
+          <label className="text-xs text-secondary-300">ชื่องาน</label>
+          <div className="font-medium text-white">{task.title}</div>
         </div>
         {task.detail && (
           <div>
-            <label className="text-xs text-slate-500">รายละเอียด</label>
-            <div className="whitespace-pre-wrap">{task.detail}</div>
+            <label className="text-xs text-secondary-300">รายละเอียด</label>
+            <div className="whitespace-pre-wrap text-white">{task.detail}</div>
           </div>
         )}
         <div>
-          <label className="text-xs text-slate-500">กำหนดส่ง</label>
+          <label className="text-xs text-secondary-300">กำหนดส่ง</label>
           <div className="flex items-center gap-2">
             {task.dueAt ? (
               <>
-                <CalendarIcon className="h-4 w-4 text-slate-500"/>
-                <span>{format(new Date(task.dueAt), "d MMM yyyy HH:mm", {locale: th})}</span>
-                <span className="text-sm text-slate-500">• {isPast(new Date(task.dueAt)) ? 'เลยกำหนดแล้ว' : timeLeftLabel(task.dueAt)}</span>
+                <CalendarIcon className="h-4 w-4 text-secondary-300"/>
+                <span className="text-white">{format(new Date(task.dueAt), "d MMM yyyy HH:mm", {locale: th})}</span>
+                <span className="text-sm text-secondary-300">• {isPast(new Date(task.dueAt)) ? 'เลยกำหนดแล้ว' : timeLeftLabel(task.dueAt)}</span>
               </>
             ) : (
-              <span className="text-slate-500">ไม่มีวันส่ง</span>
+              <span className="text-secondary-300">ไม่มีวันส่ง</span>
             )}
           </div>
         </div>
         {task.link && (
           <div>
-            <label className="text-xs text-slate-500">ลิงก์ที่เกี่ยวข้อง</label>
-            <a href={task.link} target="_blank" className="text-indigo-500 hover:underline flex items-center gap-1">
+            <label className="text-xs text-secondary-300">ลิงก์ที่เกี่ยวข้อง</label>
+            <a href={task.link} target="_blank" className="text-primary-500 hover:underline flex items-center gap-1">
               <LinkIcon className="h-4 w-4"/> {task.link}
             </a>
           </div>
@@ -1648,7 +1651,7 @@ function ReminderPicker({value, onChange}){
   return (
     <div className="flex flex-wrap gap-2">
       {items.map(it=> (
-        <GhostButton key={it.label} onClick={()=>toggle(it)} className={value.some(x=>x.type===it.type && x.amount===it.amount)? 'bg-slate-50 dark:bg-slate-800' : ''}>
+        <GhostButton key={it.label} onClick={()=>toggle(it)} className={value.some(x=>x.type===it.type && x.amount===it.amount)? 'bg-secondary-800' : ''}>
           <Bell className="h-4 w-4"/> {it.label}
         </GhostButton>
       ))}
@@ -1683,7 +1686,7 @@ function AddCourseModal({course, onClose, onSave}) {
       <div className="text-lg font-semibold mb-4">{course ? 'แก้ไขวิชาเรียน' : 'เพิ่มวิชาเรียนใหม่'}</div>
       <div className="space-y-4 max-h-[60vh] overflow-y-auto">
         <div>
-          <label className="text-xs text-slate-500">ชื่อวิชา</label>
+          <label className="text-xs text-secondary-300">ชื่อวิชา</label>
           <Input 
             value={form.name} 
             onChange={e => setForm({...form, name: e.target.value})} 
@@ -1692,7 +1695,7 @@ function AddCourseModal({course, onClose, onSave}) {
           />
         </div>
         <div>
-          <label className="text-xs text-slate-500">รหัสวิชา</label>
+          <label className="text-xs text-secondary-300">รหัสวิชา</label>
           <Input 
             value={form.code} 
             onChange={e => setForm({...form, code: e.target.value})} 
@@ -1701,7 +1704,7 @@ function AddCourseModal({course, onClose, onSave}) {
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-xs text-slate-500">ห้องเรียน</label>
+            <label className="text-xs text-secondary-300">ห้องเรียน</label>
             <Input 
               value={form.room} 
               onChange={e => setForm({...form, room: e.target.value})} 
@@ -1709,7 +1712,7 @@ function AddCourseModal({course, onClose, onSave}) {
             />
           </div>
           <div>
-            <label className="text-xs text-slate-500">ห้อง P</label>
+            <label className="text-xs text-secondary-300">ห้อง P</label>
             <Input 
               value={form.pRoom} 
               onChange={e => setForm({...form, pRoom: e.target.value})} 
@@ -1718,7 +1721,7 @@ function AddCourseModal({course, onClose, onSave}) {
           </div>
         </div>
         <div>
-          <label className="text-xs text-slate-500">อาจารย์</label>
+          <label className="text-xs text-secondary-300">อาจารย์</label>
           <Input 
             value={form.teacher} 
             onChange={e => setForm({...form, teacher: e.target.value})} 
@@ -1726,7 +1729,7 @@ function AddCourseModal({course, onClose, onSave}) {
           />
         </div>
         <div>
-          <label className="text-xs text-slate-500">วันเรียน</label>
+          <label className="text-xs text-secondary-300">วันเรียน</label>
           <div className="flex flex-wrap gap-2 mt-1">
             {[
               {value: 1, label: 'จันทร์'},
@@ -1738,7 +1741,7 @@ function AddCourseModal({course, onClose, onSave}) {
               <GhostButton 
                 key={day.value}
                 onClick={() => setForm({...form, dayOfWeek: day.value})}
-                className={form.dayOfWeek === day.value ? 'bg-indigo-500 !text-white' : 'bg-white/40'}
+                className={form.dayOfWeek === day.value ? 'bg-primary-500 !text-secondary-900' : 'bg-secondary-700/40 text-secondary-300'}
               >
                 {day.label}
               </GhostButton>
@@ -1747,7 +1750,7 @@ function AddCourseModal({course, onClose, onSave}) {
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-xs text-slate-500">เวลาเริ่ม</label>
+            <label className="text-xs text-secondary-300">เวลาเริ่ม</label>
             <Input 
               type="time"
               value={form.startTime} 
@@ -1755,7 +1758,7 @@ function AddCourseModal({course, onClose, onSave}) {
             />
           </div>
           <div>
-            <label className="text-xs text-slate-500">เวลาจบ</label>
+            <label className="text-xs text-secondary-300">เวลาจบ</label>
             <Input 
               type="time"
               value={form.endTime} 
@@ -1764,7 +1767,7 @@ function AddCourseModal({course, onClose, onSave}) {
           </div>
         </div>
         <div>
-          <label className="text-xs text-slate-500 mb-2 block">เงื่อนไขการเรียน</label>
+          <label className="text-xs text-secondary-300 mb-2 block">เงื่อนไขการเรียน</label>
           <div className="space-y-2">
             {[
               {value: 'odd-onsite', label: 'เข้าชั้นเรียนในสัปดาห์คี่ / ออนไลน์ในสัปดาห์คู่'},
@@ -1772,7 +1775,7 @@ function AddCourseModal({course, onClose, onSave}) {
               {value: 'online-always', label: 'ออนไลน์ตลอด'},
               {value: 'onsite-always', label: 'มหาลัยตลอด'},
             ].map(type => (
-              <label key={type.value} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-100/50 dark:hover:bg-slate-800/50 cursor-pointer">
+              <label key={type.value} className="flex items-center gap-2 p-2 rounded-lg hover:bg-secondary-700/50 cursor-pointer">
                 <input 
                   type="radio"
                   name="scheduleType"
@@ -1787,12 +1790,12 @@ function AddCourseModal({course, onClose, onSave}) {
           </div>
         </div>
         <div>
-          <label className="text-xs text-slate-500">สีประจำวิชา</label>
+          <label className="text-xs text-secondary-300">สีประจำวิชา</label>
           <Input 
             type="color"
             value={form.color} 
             onChange={e => setForm({...form, color: e.target.value})} 
-            className="w-full h-12 p-1"
+            className="w-full h-12 p-1 bg-secondary-800 border-secondary-700"
           />
         </div>
       </div>
@@ -1902,9 +1905,9 @@ function Settings({state, dispatch, userId, onLogout, setView}){
         <SectionTitle>จัดการรายวิชา</SectionTitle>
         <div className="space-y-2 mb-4">
           {state.subjects.map(s => (
-            <div key={s.id} className="flex items-center p-2 rounded-lg bg-slate-100/50 dark:bg-slate-800/50 group">
+            <div key={s.id} className="flex items-center p-2 rounded-lg bg-secondary-800/50 group">
               <span className="w-3 h-3 rounded-full mr-3" style={{backgroundColor: s.color}}></span>
-              <span className="flex-1">{s.name}</span>
+              <span className="flex-1 text-white">{s.name}</span>
               <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <GhostButton onClick={() => handleEditSubject(s)} className="!p-2"><Pencil className="h-4 w-4"/></GhostButton>
                 <GhostButton onClick={() => handleDeleteSubject(s.id)} className="!p-2 text-rose-500"><Trash2 className="h-4 w-4"/></GhostButton>
@@ -1972,11 +1975,11 @@ function Settings({state, dispatch, userId, onLogout, setView}){
         <SectionTitle>จัดการตารางเรียน</SectionTitle>
         <div className="space-y-2 mb-4">
           {state.courses.map(c => (
-            <div key={c.id} className="flex items-center p-2 rounded-lg bg-slate-100/50 dark:bg-slate-800/50 group">
+            <div key={c.id} className="flex items-center p-2 rounded-lg bg-secondary-800/50 group">
               <span className="w-3 h-3 rounded-full mr-3" style={{backgroundColor: c.color}}></span>
               <div className="flex-1">
-                <div className="font-medium">{c.name}</div>
-                <div className="text-xs text-slate-500">{c.code} • {['', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์'][c.dayOfWeek]} {c.startTime}-{c.endTime}</div>
+                <div className="font-medium text-white">{c.name}</div>
+                <div className="text-xs text-secondary-300">{c.code} • {['', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์'][c.dayOfWeek]} {c.startTime}-{c.endTime}</div>
               </div>
               <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <GhostButton onClick={() => handleEditCourse(c)} className="!p-2"><Pencil className="h-4 w-4"/></GhostButton>
@@ -2012,7 +2015,7 @@ function Settings({state, dispatch, userId, onLogout, setView}){
 
       <Card>
         <SectionTitle><Archive className="h-4 w-4"/> ประวัติงาน</SectionTitle>
-        <p className="text-sm text-slate-500 mb-3">ดูงานที่เสร็จสิ้นไปแล้ว</p>
+        <p className="text-sm text-secondary-300 mb-3">ดูงานที่เสร็จสิ้นไปแล้ว</p>
         <Button onClick={() => setView('history')}>ไปที่หน้าประวัติงาน</Button>
       </Card>
 
@@ -2024,22 +2027,22 @@ function Settings({state, dispatch, userId, onLogout, setView}){
             <GhostButton onClick={()=>fileRef.current?.click()}><Upload className="h-4 w-4"/> นำเข้า JSON</GhostButton>
             <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={importData} />
           </div>
-          <div className="mt-3 text-xs text-slate-500">ข้อมูลจะถูกบันทึกออนไลน์อัตโนมัติ</div>
+          <div className="mt-3 text-xs text-secondary-300">ข้อมูลจะถูกบันทึกออนไลน์อัตโนมัติ</div>
         </Card>
 
         <Card className="sm:col-span-1">
           <SectionTitle>ล้างข้อมูลทั้งหมด</SectionTitle>
           <div className="flex flex-col items-start">
             <Button className="bg-rose-600 hover:bg-rose-700" onClick={handleClearData}>ล้างข้อมูล</Button>
-            <p className="text-xs text-slate-500 mt-2">การกระทำนี้จะลบข้อมูลทั้งหมดในบัญชีของคุณอย่างถาวร</p>
+            <p className="text-xs text-secondary-300 mt-2">การกระทำนี้จะลบข้อมูลทั้งหมดในบัญชีของคุณอย่างถาวร</p>
           </div>
         </Card>
       </div>
 
       <Card>
         <SectionTitle>บัญชี</SectionTitle>
-        <p className="text-sm text-slate-500 mb-3">ออกจากระบบเพื่อสลับบัญชี</p>
-        <Button onClick={onLogout} className="bg-slate-600 hover:bg-slate-700"><LogOut className="h-4 w-4"/> ออกจากระบบ</Button>
+        <p className="text-sm text-secondary-300 mb-3">ออกจากระบบเพื่อสลับบัญชี</p>
+        <Button onClick={onLogout} className="bg-secondary-700 hover:bg-secondary-600"><LogOut className="h-4 w-4"/> ออกจากระบบ</Button>
       </Card>
     </div>
   )
@@ -2101,9 +2104,9 @@ function TaskDetailView({ task, onUpdate, onClose, subjects }) {
           </div>
         </div>
         <div className="mb-4">
-          <label className="text-xs text-slate-500 mb-1 block">ประเภท</label>
-          <div className="flex gap-2"><GhostButton onClick={() => setForm({...form, taskType: 'deadline'})} className={`flex-1 ${form.taskType === 'deadline' ? 'bg-indigo-500 !text-white' : 'bg-white/40'}`}><span className="flex items-center gap-2">{icons.task} งาน</span></GhostButton>
-            <GhostButton onClick={() => setForm({...form, taskType: 'event'})} className={`flex-1 ${form.taskType === 'event' ? 'bg-indigo-500 !text-white' : 'bg-white/40'}`}><span className="flex items-center gap-2">{icons.event} นัดหมาย</span></GhostButton>
+          <label className="text-xs text-secondary-300 mb-1 block">ประเภท</label>
+          <div className="flex gap-2"><GhostButton onClick={() => setForm({...form, taskType: 'deadline'})} className={`flex-1 ${form.taskType === 'deadline' ? 'bg-primary-500 !text-secondary-900' : 'bg-secondary-700/40 text-secondary-300'}`}><span className="flex items-center gap-2">{icons.task} งาน</span></GhostButton>
+            <GhostButton onClick={() => setForm({...form, taskType: 'event'})} className={`flex-1 ${form.taskType === 'event' ? 'bg-primary-500 !text-secondary-900' : 'bg-secondary-700/40 text-secondary-300'}`}><span className="flex items-center gap-2">{icons.event} นัดหมาย</span></GhostButton>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2122,7 +2125,7 @@ function TaskDetailView({ task, onUpdate, onClose, subjects }) {
             <label className="text-xs">รายละเอียด</label>
             <Textarea value={form.detail||''} onChange={e=>setForm({...form, detail:e.target.value})} />
           </div>
-          <div className="md:col-span-2 p-3 rounded-2xl bg-slate-100/50">
+          <div className="md:col-span-2 p-3 rounded-2xl bg-secondary-800/50">
             <DayPicker
               mode="range"
               selected={selectedRange}
@@ -2131,7 +2134,7 @@ function TaskDetailView({ task, onUpdate, onClose, subjects }) {
               showOutsideDays
               weekStartsOn={1}
             />
-            <div className="grid grid-cols-2 gap-4 mt-2 pt-2 border-t border-slate-200/50">
+            <div className="grid grid-cols-2 gap-4 mt-2 pt-2 border-t border-secondary-700/50">
               {form.taskType === 'deadline' && (
                 <div>
                   <label className="text-xs">เวลาเริ่ม</label>
@@ -2159,47 +2162,47 @@ function TaskDetailView({ task, onUpdate, onClose, subjects }) {
 
   return (
     <>
-      <div className="text-lg font-semibold mb-2">{task.title}</div>
+      <div className="text-lg font-semibold mb-2 text-white">{task.title}</div>
       <div className="space-y-4">
         {task.detail && (
           <div>
-            <label className="text-xs text-slate-500">รายละเอียด</label>
-            <div className="whitespace-pre-wrap text-sm">{task.detail}</div>
+            <label className="text-xs text-secondary-300">รายละเอียด</label>
+            <div className="whitespace-pre-wrap text-sm text-white">{task.detail}</div>
           </div>
         )}
         <div>
-          <label className="text-xs text-slate-500">{task.taskType === 'event' ? 'นัดหมาย' : 'กำหนดส่ง'}</label>
+          <label className="text-xs text-secondary-300">{task.taskType === 'event' ? 'นัดหมาย' : 'กำหนดส่ง'}</label>
           <div className="flex items-center gap-2 text-sm">
             {task.dueAt ? (
               <>
-                <CalendarIcon className="h-4 w-4 text-slate-500"/>
-                <span>{format(new Date(task.dueAt), "d MMMM yyyy 'เวลา' HH:mm", {locale: th})}</span>
+                <CalendarIcon className="h-4 w-4 text-secondary-300"/>
+                <span className="text-white">{format(new Date(task.dueAt), "d MMMM yyyy 'เวลา' HH:mm", {locale: th})}</span>
               </>
             ) : (
-              <span className="text-slate-500">ไม่มี</span>
+              <span className="text-white">ไม่มี</span>
             )}
           </div>
         </div>
         {task.link && (
           <div>
-            <label className="text-xs text-slate-500">ลิงก์</label>
-            <a href={task.link} target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:underline flex items-center gap-1 text-sm truncate">
+            <label className="text-xs text-secondary-300">ลิงก์</label>
+            <a href={task.link} target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline flex items-center gap-1 text-sm truncate">
               <LinkIcon className="h-4 w-4"/> {task.link}
             </a>
           </div>
         )}
         <div className="flex gap-4">
           <div>
-            <label className="text-xs text-slate-500">สถานะ</label>
+            <label className="text-xs text-secondary-300">สถานะ</label>
             <div>{statusBadge(task.status)}</div>
           </div>
           <div>
-            <label className="text-xs text-slate-500">วิชา</label>
-            <div>{task.subjectName ? <Badge className="border-slate-300 text-slate-500"><span className="inline-block w-2 h-2 rounded-full mr-1" style={{background:task.subjectColor || '#94a3b8'}}/> {task.subjectName}</Badge> : 'ไม่มี'}</div>
+            <label className="text-xs text-secondary-300">วิชา</label>
+            <div>{task.subjectName ? <Badge className="border-secondary-600/50 text-secondary-300"><span className="inline-block w-2 h-2 rounded-full mr-1" style={{background:task.subjectColor || '#94a3b8'}}/> {task.subjectName}</Badge> : 'ไม่มี'}</div>
           </div>
         </div>
       </div>
-      <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-2">
+      <div className="mt-6 pt-4 border-t border-secondary-700 flex justify-end gap-2">
         <GhostButton onClick={onClose}>ปิด</GhostButton>
         <Button onClick={() => setEditing(true)}><Pencil className="h-4 w-4"/> แก้ไข</Button>
       </div>
@@ -2221,7 +2224,7 @@ function HistoryView({ tasks, dispatch }) {
   return (
     <div className="space-y-4">
       <SectionTitle><Archive className="h-5 w-5"/> ประวัติงาน</SectionTitle>
-      <p className="text-sm text-slate-500 -mt-4">รายการงานที่เสร็จสิ้นไปแล้วเกิน 1 ชั่วโมง</p>
+      <p className="text-sm text-secondary-300 -mt-4">รายการงานที่เสร็จสิ้นไปแล้วเกิน 1 ชั่วโมง</p>
       <div className="flex justify-end">
         <Button onClick={handleDelete} disabled={selectedTasks.size === 0} className="bg-rose-600 hover:bg-rose-700">
           <Trash2 className="h-4 w-4"/> ลบ {selectedTasks.size} รายการ
@@ -2238,14 +2241,14 @@ function HistoryView({ tasks, dispatch }) {
           >
             <div className="flex justify-between">
               <div>
-                <div className="font-medium">{task.title}</div>
-                <div className="text-xs text-slate-500">เสร็จสิ้นเมื่อ: {format(new Date(task.updatedAt), "d MMM yy HH:mm", {locale: th})}</div>
+                <div className="font-medium text-white">{task.title}</div>
+                <div className="text-xs text-secondary-300">เสร็จสิ้นเมื่อ: {format(new Date(task.updatedAt), "d MMM yy HH:mm", {locale: th})}</div>
               </div>
               {selectedTasks.has(task.id) && <CheckCircle className="h-5 w-5 text-rose-500" />}
             </div>
           </Card>
         ))}
-        {tasks.length === 0 && <div className="text-center text-slate-500 py-10">ยังไม่มีงานในประวัติ</div>}
+        {tasks.length === 0 && <div className="text-center text-secondary-300 py-10">ยังไม่มีงานในประวัติ</div>}
       </div>
     </div>
   );
@@ -2263,13 +2266,13 @@ function LoginScreen() {
   };
 
   return (
-    <div className="h-screen flex flex-col items-center justify-center gap-8 bg-slate-100 dark:bg-slate-950 p-4">
+    <div className="h-screen flex flex-col items-center justify-center gap-8 bg-secondary-950 p-4">
       <div className="text-center">
-        <motion.div initial={{rotate:-8, scale:0.9}} animate={{rotate:0, scale:1}} className="inline-block h-20 w-20 mb-4 rounded-3xl bg-indigo-600 text-white items-center justify-center shadow-lg shadow-indigo-500/30">
+        <motion.div initial={{rotate:-8, scale:0.9}} animate={{rotate:0, scale:1}} className="inline-block h-20 w-20 mb-4 rounded-3xl bg-primary-600 text-secondary-950 items-center justify-center shadow-lg shadow-primary-500/30">
           <Sparkles className="h-12 w-12 m-4" />
         </motion.div>
-        <h1 className="text-3xl font-bold font-display">ยินดีต้อนรับสู่ FlowO</h1>
-        <p className="text-slate-500 mt-2">จัดการตารางงานและชีวิตให้ง่ายขึ้น</p>
+        <h1 className="text-3xl font-bold font-display text-secondary-100">ยินดีต้อนรับสู่ FlowO</h1>
+        <p className="text-secondary-300 mt-2">จัดการตารางงานและชีวิตให้ง่ายขึ้น</p>
       </div>
       <Button onClick={handleSignIn} className="!px-6 !py-3 !text-base"><User className="h-5 w-5" /> เข้าสู่ระบบด้วย Google</Button>
     </div>

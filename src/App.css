@@ -7,17 +7,17 @@
 
 @layer base {
   html {
-    @apply font-sans text-slate-800 antialiased;
+    @apply font-sans text-secondary-900 dark:text-secondary-100 antialiased;
     font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
   }
 
   body {
     @apply min-h-screen m-0 bg-fixed;
     background: 
-      radial-gradient(circle at 20% 0%, rgba(99, 102, 241, 0.15), transparent 40%),
-      radial-gradient(circle at 80% 0%, rgba(59, 130, 246, 0.15), transparent 40%),
-      radial-gradient(circle at 50% 100%, rgba(147, 51, 234, 0.15), transparent 40%),
-      linear-gradient(to bottom right, rgb(240, 249, 255), rgb(243, 244, 255), rgb(245, 243, 255));
+      radial-gradient(circle at 20% 0%, rgba(166, 240, 116, 0.1), transparent 40%),
+      radial-gradient(circle at 80% 0%, rgba(132, 204, 22, 0.1), transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(21, 21, 21, 0.1), transparent 40%),
+      var(--bg-gradient);
   }  
 
   /* Custom Scrollbar */
@@ -32,7 +32,7 @@
 
   /* Selection color */
   ::selection {
-    @apply bg-indigo-500 text-white;
+    @apply bg-primary-500 text-secondary-950;
   }
 }
 
@@ -56,7 +56,7 @@
   }
   .custom-select-wrapper::after {
     content: '⌄'; /* Chevron down character */
-    @apply absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none;
+    @apply absolute right-3 top-1/2 -translate-y-1/2 text-secondary-400 pointer-events-none;
     font-size: 1.25rem;
   }
 

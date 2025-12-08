@@ -22,7 +22,7 @@ export function TaskEditForm({ task, subjects, onSave, onClose }) {
       <div className="text-lg font-semibold mb-4">แก้ไขงาน</div>
       <div className="overflow-y-auto max-h-[calc(85vh-8rem)] space-y-4">
         <div>
-          <label className="text-xs text-slate-500 mb-1 block">รายวิชา</label>
+          <label className="text-xs text-secondary-300 mb-1 block">รายวิชา</label>
           <Select 
             value={form.subjectId} 
             onChange={e => setForm({...form, subjectId: e.target.value})}
@@ -33,14 +33,14 @@ export function TaskEditForm({ task, subjects, onSave, onClose }) {
           </Select>
         </div>
         <div>
-          <label className="text-xs text-slate-500 mb-1 block">ชื่องาน</label>
+          <label className="text-xs text-secondary-300 mb-1 block">ชื่องาน</label>
           <Input 
             value={form.title} 
             onChange={e => setForm({...form, title: e.target.value})}
           />
         </div>
         <div>
-          <label className="text-xs text-slate-500 mb-1 block">รายละเอียด</label>
+          <label className="text-xs text-secondary-300 mb-1 block">รายละเอียด</label>
           <Textarea 
             value={form.detail || ''} 
             onChange={e => setForm({...form, detail: e.target.value})}
@@ -49,7 +49,7 @@ export function TaskEditForm({ task, subjects, onSave, onClose }) {
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-xs text-slate-500 mb-1 block">กำหนดส่ง</label>
+            <label className="text-xs text-secondary-300 mb-1 block">กำหนดส่ง</label>
             <Input 
               type="datetime-local" 
               value={form.dueAt || ''} 
@@ -57,7 +57,7 @@ export function TaskEditForm({ task, subjects, onSave, onClose }) {
             />
           </div>
           <div>
-            <label className="text-xs text-slate-500 mb-1 block">ระยะเวลา (นาที)</label>
+            <label className="text-xs text-secondary-300 mb-1 block">ระยะเวลา (นาที)</label>
             <Input 
               type="number" 
               min="15" 
@@ -68,7 +68,7 @@ export function TaskEditForm({ task, subjects, onSave, onClose }) {
           </div>
         </div>
         <div>
-          <label className="text-xs text-slate-500 mb-1 block">สถานะ</label>
+          <label className="text-xs text-secondary-300 mb-1 block">สถานะ</label>
           <Select 
             value={form.status} 
             onChange={e => setForm({...form, status: e.target.value})}
@@ -79,7 +79,7 @@ export function TaskEditForm({ task, subjects, onSave, onClose }) {
           </Select>
         </div>
         <div>
-          <label className="text-xs text-slate-500 mb-1 block">
+          <label className="text-xs text-secondary-300 mb-1 block">
             ความคืบหน้า: {form.progress}%
           </label>
           <input 
@@ -92,7 +92,7 @@ export function TaskEditForm({ task, subjects, onSave, onClose }) {
           />
         </div>
       </div>
-      <div className="mt-6 flex justify-end gap-2 border-t pt-4 dark:border-slate-700">
+      <div className="mt-6 flex justify-end gap-2 border-t pt-4 dark:border-secondary-700">
         <GhostButton onClick={onClose}>ยกเลิก</GhostButton>
         <Button onClick={submit}><Check className="h-4 w-4"/> บันทึก</Button>
       </div>
