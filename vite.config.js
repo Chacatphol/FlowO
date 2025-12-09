@@ -14,8 +14,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'ME-U Schedule',
-        short_name: 'ME-U',
+        name: 'FlowO',
+        short_name: 'FlowO',
         description: 'แอปบันทึกตารางงานแบบน่ารัก แต่จริงจัง',
         theme_color: '#ffffff',
         icons: [
