@@ -897,8 +897,8 @@ function ScheduleView({state, dispatch, userId}) {
             if (newDate.getDay() === 6) newDate = subDays(newDate, 1);
             setSelectedDate(newDate);
           }}>
-            <span className="hidden sm:inline text-base font-medium">ก่อนหน้า</span>
             <ChevronLeft className="h-4 w-4 mr-0.5"/>
+            <span className="hidden sm:inline text-base font-medium">ก่อนหน้า</span>
           </GhostButton>
           <div className="text-center flex-1 px-2 whitespace-nowrap">
             <div className="font-semibold text-lg mb-2">
