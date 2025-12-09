@@ -21,10 +21,10 @@ export function Modal({children, onClose}){
       />
 
       <motion.div
-        initial={{opacity:0, scale:0.98, y: 6}}
-        animate={{opacity:1, scale:1, y:0}}
-        exit={{opacity:0, scale:0.98, y:6}}
-        transition={{ duration: 0.18 }}
+        initial={{opacity:0}}
+        animate={{opacity:1}}
+        exit={{opacity:0}}
+        transition={{ duration: 0.15 }}
         className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] sm:w-[80%] md:w-[720px] z-50 max-h-[92vh] overflow-y-auto"
       >
         <div onClick={(e)=>e.stopPropagation()}>
