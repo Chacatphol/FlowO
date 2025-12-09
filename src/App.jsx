@@ -391,16 +391,18 @@ export default function App(){
   // schedule reminders for tasks when added/updated
   useEffect(()=>{ tasks.forEach(scheduleReminder) }, [tasks])
 
+  const handleLogout = React.useCallback(() => {
+    if (confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) signOut(auth);
+  }, []);
+
+  const handleAddTask = React.useCallback((payload) => dispatch({ type: 'addTask', payload }), [dispatch]);
+
   if (loadingAuth) {
     return <div className="h-screen flex items-center justify-center bg-secondary-100 dark:bg-slate-900">รอสักครู่นะงับ...</div>;
   }
 
   if (!user) {
     return <LoginScreen />;
-  }
-
-  const handleLogout = () => {
-    if (confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) signOut(auth);
   }
 
   return (
@@ -476,7 +478,7 @@ export default function App(){
               <Trash2 className="h-4 w-4"/> ลบ {selectedTasksForDeletion.size} รายการ
             </Button>
           ) : (
-            <AddTaskButton subjects={state.subjects} onAdd={(payload) => dispatch({ type: 'addTask', payload })} />
+            <AddTaskButton subjects={state.subjects} onAdd={handleAddTask} />
           )}
         </div>
       )}
@@ -497,7 +499,7 @@ export default function App(){
   )
 }
 
-function Dashboard({state, tasks, dueSoon, progressToday, lazyScore, setView, setSelectedSubject}){
+const Dashboard = React.memo(function Dashboard({state, tasks, dueSoon, progressToday, lazyScore, setView, setSelectedSubject}){
   // start with no date selected to avoid opening the date modal on app load
   const [modalDate, setModalDate] = useState(null);
   const [scheduleDate, setScheduleDate] = useState(new Date());
@@ -820,9 +822,9 @@ function Dashboard({state, tasks, dueSoon, progressToday, lazyScore, setView, se
       </AnimatePresence>
     </div>
   );
-}
+});
 
-function ScheduleView({state, dispatch, userId}) {
+const ScheduleView = React.memo(function ScheduleView({state, dispatch, userId}) {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedCourse, setSelectedCourse] = useState(null); // Will now be { course, date }
 
@@ -1174,10 +1176,15 @@ function ScheduleView({state, dispatch, userId}) {
       </AnimatePresence>
     </div>
   );
-}
+});
 
-function TasksView({state, dispatch, tasks, filteredTasks, setQuery, query, selectedSubject, setSelectedSubject, deleteMode, selectedTasksForDeletion, setSelectedTasksForDeletion}){
+const TasksView = React.memo(function TasksView({state, dispatch, tasks, filteredTasks, setQuery, query, selectedSubject, setSelectedSubject, deleteMode, selectedTasksForDeletion, setSelectedTasksForDeletion}){
   const [editingTask, setEditingTask] = useState(null);
+
+  const handleUpdateTask = React.useCallback((payload) => dispatch({ type: 'updateTask', payload }), [dispatch]);
+  const handleViewTask = React.useCallback((t) => setEditingTask(t), []);
+  const handleToggleSelect = React.useCallback((id) => setSelectedTasksForDeletion(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; }), [setSelectedTasksForDeletion]); // Note: setSelectedTasksForDeletion is stable from useState
+
 
   const subjectTasksCount = useMemo(() => 
     Object.fromEntries(state.subjects.map(s => [s.id, tasks.filter(t => t.subjectId === s.id).length])), 
@@ -1261,9 +1268,9 @@ function TasksView({state, dispatch, tasks, filteredTasks, setQuery, query, sele
               task={t}
               isInDeleteMode={deleteMode}
               isSelected={selectedTasksForDeletion.has(t.id)}
-              onToggleSelect={() => setSelectedTasksForDeletion(prev => { const next = new Set(prev); if (next.has(t.id)) next.delete(t.id); else next.add(t.id); return next; })}
-              onUpdate={(payload) => dispatch({ type: 'updateTask', payload })}
-              onView={() => setEditingTask(t)}
+              onToggleSelect={handleToggleSelect}
+              onUpdate={handleUpdateTask}
+              onView={handleViewTask}
             />
           ))}
         {filteredTasks.length === 0 && 
@@ -1280,9 +1287,9 @@ function TasksView({state, dispatch, tasks, filteredTasks, setQuery, query, sele
       </AnimatePresence>
     </div>
   )
-}
+});
 
-function AddTaskButton({subjects, onAdd}){
+const AddTaskButton = React.memo(function AddTaskButton({subjects, onAdd}){
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({
     subjectId: subjects[0]?.id || '',
@@ -1457,7 +1464,7 @@ function AddTaskButton({subjects, onAdd}){
       </AnimatePresence>
     </>
   )
-}
+});
 
 function HorizontalScroller({ children }) {
   const scrollRef = useRef(null);
@@ -1496,7 +1503,7 @@ function HorizontalScroller({ children }) {
   );
 }
 
-function TaskItem({task, onUpdate, onView, isInDeleteMode, isSelected, onToggleSelect}){
+const TaskItem = React.memo(function TaskItem({task, onUpdate, onView, isInDeleteMode, isSelected, onToggleSelect}){
 
   const handleStatusChange = (e) => {
     e.stopPropagation(); // หยุดไม่ให้ event ส่งผลกระทบกับส่วนอื่น
@@ -1527,9 +1534,9 @@ function TaskItem({task, onUpdate, onView, isInDeleteMode, isSelected, onToggleS
 
   const handleClick = () => {
     if (isInDeleteMode) {
-      onToggleSelect();
+      onToggleSelect(task.id);
     } else {
-      onView();
+      onView(task);
     }
   };
 
@@ -1578,7 +1585,7 @@ function TaskItem({task, onUpdate, onView, isInDeleteMode, isSelected, onToggleS
       </div>
     </Card>
   )
-}
+});
 
 function TaskDetailModal({ task, onClose }) {
   return (
@@ -1797,7 +1804,7 @@ function AddCourseModal({course, onClose, onSave}) {
 }
 
 
-function Settings({state, dispatch, userId, onLogout, setView}){
+const Settings = React.memo(function Settings({state, dispatch, userId, onLogout, setView}){
   const fileRef = useRef(null);
   const [addingSubject, setAddingSubject] = useState(false);
   const [editingSubject, setEditingSubject] = useState(null); // This will hold the subject object being edited
@@ -2035,7 +2042,7 @@ function Settings({state, dispatch, userId, onLogout, setView}){
       </Card>
     </div>
   )
-}
+});
 
 function TaskDetailView({ task, onUpdate, onClose, subjects }) {
   const [isEditing, setEditing] = useState(false);
@@ -2199,7 +2206,7 @@ function TaskDetailView({ task, onUpdate, onClose, subjects }) {
   );
 }
 
-function HistoryView({ tasks, dispatch }) {
+const HistoryView = React.memo(function HistoryView({ tasks, dispatch }) {
   const [selectedTasks, setSelectedTasks] = useState(new Set());
 
   const handleDelete = () => {
@@ -2241,7 +2248,7 @@ function HistoryView({ tasks, dispatch }) {
       </div>
     </div>
   );
-}
+});
 
 function LoginScreen() {
   const handleSignIn = async () => {
