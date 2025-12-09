@@ -442,15 +442,13 @@ export default function App(){
             <img src="/logo.svg" alt="FlowO Logo" className="h-8" />
           </header>
 
-          <AnimatePresence mode="wait">
-            <motion.div key={view} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+          <div key={view} className="animate-fade-in">
               {view === 'dashboard' && <Dashboard state={state} tasks={tasks} dueSoon={dueSoon} progressToday={progressToday} lazyScore={lazyScore} setView={setView} setSelectedSubject={setSelectedSubject} />}
               {view === 'tasks' && <TasksView state={state} dispatch={dispatch} tasks={tasks} filteredTasks={filteredTasks} setQuery={setQuery} query={query} selectedSubject={selectedSubject} setSelectedSubject={setSelectedSubject} deleteMode={deleteMode} selectedTasksForDeletion={selectedTasksForDeletion} setSelectedTasksForDeletion={setSelectedTasksForDeletion} />}
               {view === 'schedule' && <ScheduleView state={state} dispatch={dispatch} userId={user?.uid} />}
               {view === 'settings' && <Settings state={state} dispatch={dispatch} userId={user?.uid} onLogout={handleLogout} setView={setView} />}
               {view === 'history' && <HistoryView tasks={archivedTasks} dispatch={dispatch} />}
-            </motion.div>
-          </AnimatePresence>
+          </div>
         </main>
       </div>
 
@@ -1257,27 +1255,17 @@ function TasksView({state, dispatch, tasks, filteredTasks, setQuery, query, sele
 
       {/* Task List */}
       <div className="space-y-2">
-        <AnimatePresence>
           {filteredTasks.map(t=> (
-            <motion.div
+            <TaskItem 
               key={t.id}
-              layout
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.3 }}
-            >
-              <TaskItem 
-                task={t}
-                isInDeleteMode={deleteMode}
-                isSelected={selectedTasksForDeletion.has(t.id)}
-                onToggleSelect={() => setSelectedTasksForDeletion(prev => { const next = new Set(prev); if (next.has(t.id)) next.delete(t.id); else next.add(t.id); return next; })}
-                onUpdate={(payload) => dispatch({ type: 'updateTask', payload })}
-                onView={() => setEditingTask(t)}
-              />
-            </motion.div>
+              task={t}
+              isInDeleteMode={deleteMode}
+              isSelected={selectedTasksForDeletion.has(t.id)}
+              onToggleSelect={() => setSelectedTasksForDeletion(prev => { const next = new Set(prev); if (next.has(t.id)) next.delete(t.id); else next.add(t.id); return next; })}
+              onUpdate={(payload) => dispatch({ type: 'updateTask', payload })}
+              onView={() => setEditingTask(t)}
+            />
           ))}
-        </AnimatePresence>
         {filteredTasks.length === 0 && 
           <div className="text-center text-secondary-300 py-10">ไม่พบงานตามที่ค้นหา</div>
         }
