@@ -34,6 +34,9 @@ export default {
           900: '#1a1716',
           950: '#0c0a09',
         },
+        other: {
+          red001: '#fa104a',
+        },
         glass: {
           light: 'rgba(255, 255, 255, 0.1)',
           DEFAULT: 'rgba(255, 255, 255, 0.2)',

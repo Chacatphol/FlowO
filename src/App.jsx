@@ -939,14 +939,19 @@ const ScheduleView = React.memo(function ScheduleView({state, dispatch, userId})
     return Math.ceil((endMinutes - startMinutes) / 60);
   };
 
-  const handleOverride = (course, date) => {
+  const handleOverride = (course, date, targetStatus) => {
     const { status } = getCourseStatus(course, date, state.scheduleOverrides);
     const weekStartDate = startOfWeek(date, { weekStartsOn: 1 }); // เริ่มนับจากวันจันทร์
     const weekStartDateString = format(weekStartDate, 'yyyy-MM-dd');
     const overrideKey = `${course.id}_${weekStartDateString}`;
     
     const defaultStatusResult = getCourseStatus(course, date, {});
-    const nextStatusToSet = status === 'online' ? 'onsite' : 'online';
+    
+    let nextStatusToSet = targetStatus;
+    // Fallback for legacy toggle behavior if needed, though UI now uses specific buttons
+    if (!nextStatusToSet) {
+        nextStatusToSet = status === 'online' ? 'onsite' : 'online';
+    }
 
     if (nextStatusToSet === defaultStatusResult.status) {
         dispatch({ type: 'removeScheduleOverride', payload: { key: overrideKey } });
@@ -1009,11 +1014,15 @@ const ScheduleView = React.memo(function ScheduleView({state, dispatch, userId})
                 ? 'bg-blue-600'
                 : status === 'onsite'
                 ? 'bg-primary-600'
+                : status === 'holiday'
+                ? 'bg-rose-600'
                 : 'bg-secondary-600';
               const statusLabel = status === 'online'
                 ? <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm leading-none">globe</span> <span className="leading-none">ออนไลน์</span></span>
                 : status === 'onsite'
                 ? <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm leading-none">school</span> <span className="leading-none">ออนไซต์</span></span>
+                : status === 'holiday'
+                ? <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm leading-none">block</span> <span className="leading-none">งดคลาส</span></span>
                 : <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm leading-none">question_mark</span> <span className="leading-none">ไม่ทราบ</span></span>;
 
               return (
@@ -1105,14 +1114,16 @@ const ScheduleView = React.memo(function ScheduleView({state, dispatch, userId})
                       if (courseAtTime && courseAtTime.startTime === time) {
                         const rowspan = getTimeSlotRowspan(courseAtTime);
                         const { status, isOverridden } = getCourseStatus(courseAtTime, day, state.scheduleOverrides);
-                        const statusBgColor = status === 'online' ? 'bg-blue-600' : status === 'onsite' ? 'bg-primary-600' : 'bg-secondary-600';
+                        const statusBgColor = status === 'online' ? 'bg-blue-600' : status === 'onsite' ? 'bg-primary-600' : status === 'holiday' ? 'bg-rose-600' : 'bg-secondary-600';
                         const statusIcon = status === 'online'
   ? <span className="material-symbols-outlined text-[12px] leading-none">globe</span>
   : status === 'onsite'
   ? <span className="material-symbols-outlined text-[12px] leading-none">school</span>
+  : status === 'holiday'
+  ? <span className="material-symbols-outlined text-[12px] leading-none">block</span>
   : <span className="material-symbols-outlined text-[12px] leading-none">question_mark</span>;
 
-                        const statusText = status === 'online' ? 'ออนไลน์' : status === 'onsite' ? 'ออนไซต์' : 'ไม่ทราบ';
+                        const statusText = status === 'online' ? 'ออนไลน์' : status === 'onsite' ? 'ออนไซต์' : status === 'holiday' ? 'งดคลาส' : 'ไม่ทราบ';
                         
                         for (let i = 0; i < rowspan; i++) {
                           renderedCells.add(`${dayKey}-${timeIndex + i}`);
@@ -1220,26 +1231,43 @@ const ScheduleView = React.memo(function ScheduleView({state, dispatch, userId})
                 <div className="flex flex-col gap-4">
                   {/* ชั้นบน: สถานะปัจจุบัน */}
                   <div>
-                    <div className="font-bold text-sm flex justify-center gap-2 mt-1 text-white">
+                  <div className="font-bold text-sm flex justify-center gap-2 mt-1 text-white">
                       <label className="text-sm text-secondary-300">สถานะปัจจุบัน</label>
                       {isOverridden && <RefreshCw className="h-5 w-5 animate-spin text-primary-500" />}
                       {status === 'online'
                         ? <><span className="material-symbols-outlined">globe</span> ออนไลน์</>
-                        : <><span className="material-symbols-outlined">school</span> ออนไซต์</>
+                        : status === 'onsite'
+                        ? <><span className="material-symbols-outlined">school</span> ออนไซต์</>
+                        : status === 'holiday'
+                        ? <><span className="material-symbols-outlined">block</span> งดคลาส</>
+                        : <><span className="material-symbols-outlined">question_mark</span> {status}</>
                       }
                     </div>
 
                   </div>
-                  <div className="flex justify-center">
+                  <div className="flex flex-wrap justify-center gap-2 mt-2">
                     <Button 
-                      onClick={() => handleOverride(course, date)}
-                      className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold px-5 py-2 shadow-lg"
+                      onClick={() => handleOverride(course, date, 'onsite')}
+                      className={`px-4 py-2 ${status === 'onsite' ? 'bg-secondary-700 opacity-50 cursor-default' : 'bg-primary-600 hover:bg-primary-700'} shadow-lg`}
+                      disabled={status === 'onsite'}
                     >
-                      <RefreshCw className="h-5 w-5 mr-2" />
-                      เปลี่ยนเป็น {nextStatus === 'online'
-                        ? <><span className="material-symbols-outlined">globe</span> ออนไลน์</>
-                        : <><span className="material-symbols-outlined">school</span> ออนไซต์</>
-                      }
+                      <span className="material-symbols-outlined mr-1">school</span> ออนไซต์
+                    </Button>
+
+                    <Button 
+                      onClick={() => handleOverride(course, date, 'online')}
+                      className={`px-4 py-2 ${status === 'online' ? 'bg-secondary-700 opacity-50 cursor-default' : 'bg-blue-600 hover:bg-blue-700'} shadow-lg`}
+                      disabled={status === 'online'}
+                    >
+                      <span className="material-symbols-outlined mr-1">globe</span> ออนไลน์
+                    </Button>
+
+                    <Button 
+                      onClick={() => handleOverride(course, date, 'holiday')}
+                      className={`px-4 py-2 ${status === 'holiday' ? 'bg-secondary-700 opacity-50 cursor-default' : 'bg-rose-600 hover:bg-rose-700'} shadow-lg`}
+                      disabled={status === 'holiday'}
+                    >
+                      <span className="material-symbols-outlined mr-1">block</span> งดคลาส
                     </Button>
                   </div>
                 </div>
