@@ -690,14 +690,28 @@ const Dashboard = React.memo(function Dashboard({state, tasks, dueSoon, progress
                   {format(day, 'd')}
                 </div>
                 <div className="flex flex-col gap-0.5 flex-1 justify-end min-h-0">
-                  {dayTasks.map((task, i) => (
+                  {dayTasks.map((task, i) => {
+                    // Random-ish color based on task ID for consistency if no subject color
+                    const randomColor = (() => {
+                      let hash = 0;
+                      for (let i = 0; i < task.id.length; i++) {
+                        hash = task.id.charCodeAt(i) + ((hash << 5) - hash);
+                      }
+                      const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+                      return '#' + '00000'.substring(0, 6 - c.length) + c;
+                    })();
+                    
+                    const barColor = task.subjectColor || randomColor;
+
+                    return (
                     <div 
                       key={task.id} 
                       className="h-1.5 w-full rounded-full opacity-80" 
-                      style={{backgroundColor: task.subjectColor || (task.taskType === 'event' ? '#22c55e' : '#f97316')}}
+                      style={{backgroundColor: barColor}}
                       title={task.title}
                     ></div>
-                  ))}
+                    );
+                  })}
                   {dayTasks.length >= 4 && <div className="h-0.5 w-1/2 mx-auto bg-secondary-500 rounded-full"></div>}
                 </div>
               </div>
@@ -820,16 +834,50 @@ const Dashboard = React.memo(function Dashboard({state, tasks, dueSoon, progress
                 <div className="space-y-4">
                   {activeTasks.length > 0 && (
                     <div className="space-y-2">
-                      {activeTasks.map(task => (
+                      {activeTasks.map(task => {
+                        const randomColor = (() => {
+                          let hash = 0;
+                          for (let i = 0; i < task.id.length; i++) {
+                            hash = task.id.charCodeAt(i) + ((hash << 5) - hash);
+                          }
+                          const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+                          return '#' + '00000'.substring(0, 6 - c.length) + c;
+                        })();
+                        const borderColor = task.subjectColor || randomColor;
+
+                        return (
                         <div key={task.id} onClick={() => { setView('tasks'); setSelectedSubject(null); }}
                              className="p-3 rounded-lg bg-secondary-700 hover:bg-secondary-600 cursor-pointer transition-colors border-l-4"
-                             style={{borderLeftColor: task.subjectColor || '#64748b'}}>
-                          <div className="flex items-center justify-between">
-                            <div><div className="font-medium text-secondary-100">{task.title}</div><div className="text-xs text-secondary-300">{task.subjectName}</div></div>
-                            <div className="flex gap-2">{statusBadge(task.status)}</div>
+                             style={{borderLeftColor: borderColor}}>
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-secondary-100 truncate">{task.title}</div>
+                              <div className="text-secondary-300 text-xs flex flex-wrap gap-x-3 gap-y-1 mt-1">
+                                <span>{task.subjectName || 'ทั่วไป'}</span>
+                                {task.dueAt && (
+                                  <span className="flex items-center gap-1 text-secondary-400">
+                                    <Clock className="h-3 w-3"/>
+                                    {task.startAt && !isSameDay(new Date(task.startAt), new Date(task.dueAt)) ? (
+                                      <>
+                                        {format(new Date(task.startAt), 'd MMM', {locale: th})} - {format(new Date(task.dueAt), 'd MMM', {locale: th})}
+                                      </>
+                                    ) : (
+                                      format(new Date(task.dueAt), 'd MMM HH:mm', {locale: th})
+                                    )}
+                                  </span>
+                                )}
+                              </div>
+                              {task.dueAt && !isPast(new Date(task.dueAt)) && (
+                                <div className="text-xs text-primary-400 mt-1">
+                                  เหลือเวลา: {timeLeftLabel(task.dueAt)}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-shrink-0">{statusBadge(task.status)}</div>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                   {completedTasks.length > 0 && (
