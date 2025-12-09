@@ -443,7 +443,7 @@ export default function App(){
           </header>
 
           <AnimatePresence mode="wait">
-            <motion.div key={view} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.12 }}>
+            <motion.div key={view} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
               {view === 'dashboard' && <Dashboard state={state} tasks={tasks} dueSoon={dueSoon} progressToday={progressToday} lazyScore={lazyScore} setView={setView} setSelectedSubject={setSelectedSubject} />}
               {view === 'tasks' && <TasksView state={state} dispatch={dispatch} tasks={tasks} filteredTasks={filteredTasks} setQuery={setQuery} query={query} selectedSubject={selectedSubject} setSelectedSubject={setSelectedSubject} deleteMode={deleteMode} selectedTasksForDeletion={selectedTasksForDeletion} setSelectedTasksForDeletion={setSelectedTasksForDeletion} />}
               {view === 'schedule' && <ScheduleView state={state} dispatch={dispatch} userId={user?.uid} />}
@@ -509,19 +509,20 @@ function Dashboard({state, tasks, dueSoon, progressToday, lazyScore, setView, se
 
   const start = startOfMonth(calendarCursor);
   const end = endOfMonth(calendarCursor);
-  const calendarDays = eachDayOfInterval({
+  /* Dashboard optimization: Memoize expensive calculations */
+  const calendarDays = useMemo(() => eachDayOfInterval({
     start: startOfWeek(start, {weekStartsOn: 1}),
     end: endOfWeek(end, {weekStartsOn: 1})
-  });
+  }), [start, end]);
 
   // Group tasks by date for calendar
-  const tasksByDate = tasks.reduce((acc, task) => {
+  const tasksByDate = useMemo(() => tasks.reduce((acc, task) => {
     if (!task.dueAt) return acc;
     const dateKey = format(new Date(task.dueAt), 'yyyy-MM-dd');
     acc[dateKey] = acc[dateKey] || [];
     acc[dateKey].push(task);
     return acc;
-  }, {});
+  }, {}), [tasks]);
 
   const handleDateSelect = (day) => {
     setModalDate(day);
