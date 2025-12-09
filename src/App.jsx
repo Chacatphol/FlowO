@@ -312,35 +312,6 @@ export default function App(){
   const [deleteMode, setDeleteMode] = useState(false);
   const [selectedTasksForDeletion, setSelectedTasksForDeletion] = useState(new Set());
   const [nowTick, setNowTick] = useState(0)
-  
-  // -- Animation Direction Logic --
-  const navOrder = ['dashboard', 'tasks', 'schedule', 'settings', 'history'];
-  const [direction, setDirection] = useState(0);
-  const prevView = useRef(view);
-  
-  useEffect(() => {
-    const prevIndex = navOrder.indexOf(prevView.current);
-    const currIndex = navOrder.indexOf(view);
-    setDirection(currIndex > prevIndex ? 1 : -1);
-    prevView.current = view;
-  }, [view]);
-
-  const variants = {
-    enter: (direction) => ({
-      x: direction > 0 ? '100%' : '-100%',
-      opacity: 0,
-    }),
-    center: {
-      zIndex: 1,
-      x: 0,
-      opacity: 1,
-    },
-    exit: (direction) => ({
-      zIndex: 0,
-      x: direction < 0 ? '100%' : '-100%',
-      opacity: 0,
-    }),
-  };
 
   // Listen to auth state changes
   useEffect(() => {
@@ -471,27 +442,13 @@ export default function App(){
             <img src="/logo.svg" alt="FlowO Logo" className="h-8" />
           </header>
 
-          <AnimatePresence mode="popLayout" custom={direction}>
-            <motion.div
-              key={view}
-              custom={direction}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{
-                x: { type: "spring", stiffness: 300, damping: 30 },
-                opacity: { duration: 0.2 }
-              }}
-              className="w-full"
-            >
+          <div>
               {view === 'dashboard' && <Dashboard state={state} tasks={tasks} dueSoon={dueSoon} progressToday={progressToday} lazyScore={lazyScore} setView={setView} setSelectedSubject={setSelectedSubject} />}
               {view === 'tasks' && <TasksView state={state} dispatch={dispatch} tasks={tasks} filteredTasks={filteredTasks} setQuery={setQuery} query={query} selectedSubject={selectedSubject} setSelectedSubject={setSelectedSubject} deleteMode={deleteMode} selectedTasksForDeletion={selectedTasksForDeletion} setSelectedTasksForDeletion={setSelectedTasksForDeletion} />}
               {view === 'schedule' && <ScheduleView state={state} dispatch={dispatch} userId={user?.uid} />}
               {view === 'settings' && <Settings state={state} dispatch={dispatch} userId={user?.uid} onLogout={handleLogout} setView={setView} />}
               {view === 'history' && <HistoryView tasks={archivedTasks} dispatch={dispatch} />}
-            </motion.div>
-          </AnimatePresence>
+          </div>
         </main>
       </div>
 
