@@ -515,14 +515,7 @@ const Dashboard = React.memo(function Dashboard({state, tasks, dueSoon, progress
     end: endOfWeek(end, {weekStartsOn: 1})
   }), [start, end]);
 
-  // Group tasks by date for calendar
-  const tasksByDate = useMemo(() => tasks.reduce((acc, task) => {
-    if (!task.dueAt) return acc;
-    const dateKey = format(new Date(task.dueAt), 'yyyy-MM-dd');
-    acc[dateKey] = acc[dateKey] || [];
-    acc[dateKey].push(task);
-    return acc;
-  }, {}), [tasks]);
+
 
   const handleDateSelect = (day) => {
     setModalDate(day);
@@ -533,36 +526,44 @@ const Dashboard = React.memo(function Dashboard({state, tasks, dueSoon, progress
     const indicatorMap = new Map();
     for (const day of calendarDays) {
         const dayKey = format(day, 'yyyy-MM-dd');
-        const indicators = new Set();
+        const tasksForDay = [];
         
         for (const task of tasks) {
-            const isEvent = task.taskType === 'event';
-            const isDue = task.dueAt && isSameDay(new Date(task.dueAt), day);
-            const isStart = task.startAt && isSameDay(new Date(task.startAt), day);
-            const isOngoing = task.startAt && task.dueAt && !isStart && !isDue && day > new Date(task.startAt) && day < new Date(task.dueAt);
+            if (!task.dueAt) continue;
+            
+            const due = new Date(task.dueAt);
+            const start = task.startAt ? new Date(task.startAt) : due;
+            
+            // Normalize to start of day for comparison
+            const dayTime = day.getTime();
+            const startTime = new Date(start).setHours(0,0,0,0);
+            const dueTime = new Date(due).setHours(0,0,0,0);
 
-            if (isDue && (isEvent || task.taskType === 'deadline')) {
-                indicators.add('red');
-            } else if (isStart) {
-                indicators.add('blue');
-            } else if (isOngoing) {
-                indicators.add('green');
+            if (dayTime >= startTime && dayTime <= dueTime && task.status !== 'done') {
+                tasksForDay.push(task);
             }
         }
-        // Prioritize colors: Red > Blue > Green
-        const sortedIndicators = Array.from(indicators).sort((a, b) => {
-            const order = { red: 0, blue: 1, green: 2 };
-            return order[a] - order[b];
-        });
-        indicatorMap.set(dayKey, sortedIndicators);
+        // Limit to top 4 tasks to avoid overflow, sort by urgency/importance logic if needed
+        indicatorMap.set(dayKey, tasksForDay.slice(0, 4));
     }
     return indicatorMap;
   }, [calendarDays, tasks]);
 
   const scheduleItems = useMemo(() => {
     const items = [];
-    const dayTasks = (tasksByDate[format(scheduleDate, 'yyyy-MM-dd')] || [])
-      .sort((a, b) => (a.dueAt ? new Date(a.dueAt).getTime() : -1) - (b.dueAt ? new Date(b.dueAt).getTime() : -1));
+    // Recalculate tasks for the specific scheduleDate here to ensure we catch ongoing tasks
+    const dayTasks = tasks.filter(task => {
+        if (!task.dueAt) return false;
+        const due = new Date(task.dueAt);
+        const start = task.startAt ? new Date(task.startAt) : due;
+        
+        // Normalize
+        const dayTime = scheduleDate.getTime();
+        const startTime = new Date(start).setHours(0,0,0,0);
+        const dueTime = new Date(due).setHours(0,0,0,0);
+        
+        return dayTime >= startTime && dayTime <= dueTime && task.status !== 'done';
+    }).sort((a, b) => (a.dueAt ? new Date(a.dueAt).getTime() : -1) - (b.dueAt ? new Date(b.dueAt).getTime() : -1));
 
     const allDayTasks = dayTasks.filter(t => !t.dueAt);
     const workableTasks = tasks.filter(t => 
@@ -606,7 +607,7 @@ const Dashboard = React.memo(function Dashboard({state, tasks, dueSoon, progress
     }
 
     return items;
-  }, [scheduleDate, tasksByDate]);
+  }, [scheduleDate, tasks]);
 
   const formatFreeTime = (minutes) => {
     if (minutes < 60) return `${minutes} นาที`;
@@ -665,8 +666,7 @@ const Dashboard = React.memo(function Dashboard({state, tasks, dueSoon, progress
         <div className="grid grid-cols-7 gap-1">
           {calendarDays.map(day => {
             const dateKey = format(day, 'yyyy-MM-dd');
-            const dayTasks = tasksByDate[dateKey] || [];
-            const indicators = getIndicatorsForDay.get(dateKey) || [];
+            const dayTasks = getIndicatorsForDay.get(dateKey) || [];
 
             return (
               <div
@@ -677,7 +677,7 @@ const Dashboard = React.memo(function Dashboard({state, tasks, dueSoon, progress
                   transition-all duration-200
                   border border-secondary-700/50
                   backdrop-blur-sm
-                  ${indicators.length > 0 ? 'scale-100' : 'scale-90 opacity-60'}
+                  flex flex-col
                   ${isSameMonth(day, calendarCursor)
                     ? `bg-secondary-700/40 ${
                         !modalDate || !isSameDay(day, modalDate) ? 'hover:bg-secondary-700/60' : ''
@@ -686,13 +686,19 @@ const Dashboard = React.memo(function Dashboard({state, tasks, dueSoon, progress
                   ${isSameDay(day, new Date()) ? 'ring-2 ring-primary-400' : ''}
                 `}
               >
-                <div className={`text-xs ${isSameDay(day, new Date()) ? 'font-semibold text-primary-600' : ''}`}>
+                <div className={`text-xs mb-1 ${isSameDay(day, new Date()) ? 'font-semibold text-primary-600' : ''}`}>
                   {format(day, 'd')}
                 </div>
-                <div className="absolute bottom-1 left-1 right-1 flex flex-col gap-0.5">
-                  {indicators.slice(0, 8).map((color, i) => (
-                    <div key={i} className={`h-0.5 w-full rounded-full ${color === 'red' ? 'bg-red-500' : color === 'blue' ? 'bg-blue-500' : 'bg-green-500'}`}></div>
+                <div className="flex flex-col gap-0.5 flex-1 justify-end min-h-0">
+                  {dayTasks.map((task, i) => (
+                    <div 
+                      key={task.id} 
+                      className="h-1.5 w-full rounded-full opacity-80" 
+                      style={{backgroundColor: task.subjectColor || (task.taskType === 'event' ? '#22c55e' : '#f97316')}}
+                      title={task.title}
+                    ></div>
                   ))}
+                  {dayTasks.length >= 4 && <div className="h-0.5 w-1/2 mx-auto bg-secondary-500 rounded-full"></div>}
                 </div>
               </div>
             );
@@ -783,7 +789,26 @@ const Dashboard = React.memo(function Dashboard({state, tasks, dueSoon, progress
               งานวันที่ {format(modalDate, 'd MMMM yyyy', {locale: th})}
             </div>
             {(() => {
-              const dayTasks = tasksByDate[format(modalDate, 'yyyy-MM-dd')] || [];
+              const dateKey = format(modalDate, 'yyyy-MM-dd');
+              
+              // Find all tasks active on this day (start <= day <= due), including those done today
+              const dayTasks = tasks.filter(task => {
+                const dueVerified = task.dueAt ? new Date(task.dueAt) : null;
+                if (!dueVerified) return false;
+                
+                const start = task.startAt ? new Date(task.startAt) : dueVerified;
+                
+                const dayTime = new Date(modalDate).setHours(0,0,0,0);
+                const startTime = new Date(start).setHours(0,0,0,0);
+                const dueTime = new Date(dueVerified).setHours(0,0,0,0);
+                
+                // Show if it overlaps with today
+                // Special case for 'done': only show if done TODAY or if it was due today/ongoing and completed recently?
+                // User requirement: show "no work" if clear. 
+                // Let's show all tasks overlapping this day regardless of status first, then separate.
+                return dayTime >= startTime && dayTime <= dueTime;
+              });
+
               const activeTasks = dayTasks.filter(t => t.status !== 'done');
               const completedTasks = dayTasks.filter(t => t.status === 'done');
 
@@ -797,7 +822,8 @@ const Dashboard = React.memo(function Dashboard({state, tasks, dueSoon, progress
                     <div className="space-y-2">
                       {activeTasks.map(task => (
                         <div key={task.id} onClick={() => { setView('tasks'); setSelectedSubject(null); }}
-                             className="p-3 rounded-lg bg-secondary-700 hover:bg-secondary-600 cursor-pointer transition-colors">
+                             className="p-3 rounded-lg bg-secondary-700 hover:bg-secondary-600 cursor-pointer transition-colors border-l-4"
+                             style={{borderLeftColor: task.subjectColor || '#64748b'}}>
                           <div className="flex items-center justify-between">
                             <div><div className="font-medium text-secondary-100">{task.title}</div><div className="text-xs text-secondary-300">{task.subjectName}</div></div>
                             <div className="flex gap-2">{statusBadge(task.status)}</div>
@@ -810,7 +836,7 @@ const Dashboard = React.memo(function Dashboard({state, tasks, dueSoon, progress
                     <div>
                       <div className="text-sm font-semibold text-secondary-300 mt-4 pt-4 border-t border-secondary-700/80">งานที่เสร็จแล้ว</div>
                       <div className="space-y-2 mt-2">
-                        {completedTasks.map(task => (<div key={task.id} className="p-3 rounded-lg bg-secondary-800/50 opacity-70"><div className="font-medium line-through text-secondary-300">{task.title}</div><div className="text-xs text-secondary-300">{task.subjectName}</div></div>))}
+                        {completedTasks.map(task => (<div key={task.id} className="p-3 rounded-lg bg-secondary-800/50 opacity-70 border-l-4 border-secondary-600"><div className="font-medium line-through text-secondary-300">{task.title}</div><div className="text-xs text-secondary-300">{task.subjectName}</div></div>))}
                       </div>
                     </div>
                   )}
